@@ -202,7 +202,7 @@ def removeruser():
 
 @app.route('/alteraruser', methods=['POST'])
 def alteraruser():
-    # Recebe o JSON com os dados do usuário a serem atualizados
+    # Recebe o JSON com os dados do user a serem atualizados
     data = request.json
     unique_id = data.get('UniqueID')
     nome = data.get('nome')
@@ -231,3 +231,31 @@ def alteraruser():
         conn.rollback()
         cursor.close()
         return jsonify({"message": "Erro ao atualizar user: " + str(e)}), 500
+    
+    
+@app.route('/associargestorprojeto', methods=['POST'])
+def associargestorprojeto():
+    # Recebe o JSON com os dados do projeto e do novo gestor
+    data = request.json
+    unique_id = data.get('UniqueID')
+    id_gestor = data.get('id_gestor')
+
+    # Verifica se o projeto com o UniqueID especificado existe
+    cursor = conn.cursor()
+    cursor.execute("SELECT UniqueID FROM Projects WHERE UniqueID = %s", (unique_id,))
+    project_exists = cursor.fetchone()
+
+    if not project_exists:
+        cursor.close()
+        return jsonify({"message": "Erro ao associar gestor ao projeto: projeto não encontrado"}), 404
+
+    # Atualiza o id_gestor para o projeto com o UniqueID especificado
+    try:
+        cursor.execute("UPDATE Projects SET id_gestor = %s WHERE UniqueID = %s", (id_gestor, unique_id))
+        conn.commit()
+        cursor.close()
+        return jsonify({"message": "Gestor associado ao projeto com sucesso!"}), 200
+    except Exception as e:
+        conn.rollback()
+        cursor.close()
+        return jsonify({"message": "Erro ao associar gestor ao projeto: " + str(e)}), 500
