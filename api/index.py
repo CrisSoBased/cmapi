@@ -26,12 +26,15 @@ conn = pymysql.connect(
 
 @app.route('/')
 def home():
+    """
     # Exemplo de consulta ao banco de dados
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM cliente")
     data = cursor.fetchall()
     cursor.close()
     return str(data)
+    """
+    return 'tá ok'
 
 
 @app.route('/about')
