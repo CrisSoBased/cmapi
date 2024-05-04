@@ -365,3 +365,39 @@ def updutlizadoresprojeto():
         conn.rollback()
         cursor.close()
         return jsonify({"message": "Erro ao atualizar ID dos utilizadores para o projeto: " + str(e)}), 500
+
+
+@app.route('/concluirprojeto', methods=['POST'])
+def concluirprojeto():
+    # Recebe o JSON com o ID do projeto
+    data = request.json
+    id_projeto = data.get('id_projeto')
+
+    # Busca os id_utilizadores associados ao projeto
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT id_utilizadores FROM Projects WHERE UniqueID = %s", (id_projeto,))
+        id_utilizadores_str = cursor.fetchone()[0]  # Obtem a string de id_utilizadores
+        cursor.close()
+
+        # Transforma a string de id_utilizadores em uma lista de inteiros
+        id_utilizadores = [int(id_user) for id_user in id_utilizadores_str.split(',')]
+
+        # Insere na tabela avaliacao para cada id_utilizador do projeto
+        cursor = conn.cursor()
+        for id_user in id_utilizadores:
+            cursor.execute("INSERT INTO avaliacao (id_utilizador, id_projeto) VALUES (%s, %s)", (id_user, id_projeto))
+        conn.commit()
+        cursor.close()
+
+        # Atualiza o projeto para concluir
+        cursor = conn.cursor()
+        cursor.execute("UPDATE Projects SET concluir = 1 WHERE UniqueID = %s", (id_projeto,))
+        conn.commit()
+        cursor.close()
+
+        return jsonify({"message": "Projeto concluído e avaliações inseridas com sucesso!"}), 200
+    except Exception as e:
+        conn.rollback()
+        cursor.close()
+        return jsonify({"message": "Erro ao concluir projeto e inserir avaliações: " + str(e)}), 500
