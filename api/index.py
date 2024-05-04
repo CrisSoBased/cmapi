@@ -279,3 +279,23 @@ def newtarefa():
         conn.rollback()
         cursor.close()
         return jsonify({"message": "Erro ao inserir nova tarefa: " + str(e)}), 500
+
+
+@app.route('/associarutilizadortarefa', methods=['POST'])
+def associarutilizadortarefa():
+    # Recebe o JSON com os IDs do utilizador e da tarefa
+    data = request.json
+    id_utilizador = data.get('id_utilizador')
+    id_task = data.get('id_task')
+
+    # Insere a associação na tabela usertask
+    cursor = conn.cursor()
+    try:
+        cursor.execute("INSERT INTO usertask (id_utilizador, id_task) VALUES (%s, %s)", (id_utilizador, id_task))
+        conn.commit()
+        cursor.close()
+        return jsonify({"message": "Associação de utilizador e tarefa inserida com sucesso!"}), 200
+    except Exception as e:
+        conn.rollback()
+        cursor.close()
+        return jsonify({"message": "Erro ao inserir associação de utilizador e tarefa: " + str(e)}), 500
