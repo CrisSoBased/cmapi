@@ -328,3 +328,40 @@ def gettarefasprojeto():
     except Exception as e:
         cursor.close()
         return jsonify({"message": "Erro ao obter tarefas do projeto: " + str(e)}), 500
+    
+
+@app.route('/updutlizadoresprojeto', methods=['POST'])
+def updutlizadoresprojeto():
+    # Recebe o JSON com o ID do projeto
+    data = request.json
+    id_projeto = data.get('id_projeto')
+
+    # Busca os UniqueID das tarefas associadas ao projeto
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT UniqueID FROM Tasks WHERE id_projeto = %s", (id_projeto,))
+        tarefas = cursor.fetchall()
+        task_ids = [str(tarefa[0]) for tarefa in tarefas]  # Lista de UniqueIDs das tarefas
+        cursor.close()
+
+        # Busca os id_utilizador correspondentes às tarefas encontradas
+        cursor = conn.cursor()
+        cursor.execute("SELECT DISTINCT id_utilizador FROM usertask WHERE id_task IN %s", (task_ids,))
+        users = cursor.fetchall()
+        user_ids = [str(user[0]) for user in users]  # Lista de id_utilizador sem repetição
+        cursor.close()
+
+        # Formata os id_utilizador como string separada por vírgulas
+        id_utilizadores_str = ','.join(user_ids)
+
+        # Atualiza o atributo id_utilizadores na tabela Projects
+        cursor = conn.cursor()
+        cursor.execute("UPDATE Projects SET id_utilizadores = %s WHERE UniqueID = %s", (id_utilizadores_str, id_projeto))
+        conn.commit()
+        cursor.close()
+
+        return jsonify({"message": "ID dos utilizadores atualizado com sucesso para o projeto"}), 200
+    except Exception as e:
+        conn.rollback()
+        cursor.close()
+        return jsonify({"message": "Erro ao atualizar ID dos utilizadores para o projeto: " + str(e)}), 500
