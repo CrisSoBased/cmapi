@@ -78,7 +78,7 @@ def newuser():
 
 @app.route('/loginft', methods=['POST'])
 def loginft():
-    # Recebe o JSON com os dados de login
+    # aRecebe o JSON com os dados de login
     login_data = request.json
     email = login_data.get('email')
     password = login_data.get('password')
