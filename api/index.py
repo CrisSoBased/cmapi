@@ -152,4 +152,30 @@ def removeproject():
         conn.rollback()
         cursor.close()
         return jsonify({"message": "Erro ao remover projeto: " + str(e)}), 500
-    
+
+
+@app.route('/editarproject', methods=['POST'])
+def editarproject():
+    # Recebe o JSON com os dados do projeto a ser editado
+    project_data = request.json
+    unique_id = project_data.get('UniqueID')
+    novo_nome = project_data.get('nome')
+    nova_data_ini = datetime.strptime(project_data.get('data_ini'), '%Y-%m-%d').date()
+    nova_descricao = project_data.get('descricao')
+
+    # Atualiza os dados do projeto na tabela Projects
+    cursor = conn.cursor()
+    try:
+        cursor.execute("UPDATE Projects SET nome = %s, data_ini = %s, descricao = %s WHERE UniqueID = %s", 
+                       (novo_nome, nova_data_ini, nova_descricao, unique_id))
+        conn.commit()
+        if cursor.rowcount > 0:
+            cursor.close()
+            return jsonify({"message": "Projeto atualizado com sucesso!"}), 200
+        else:
+            cursor.close()
+            return jsonify({"message": "Nenhum projeto encontrado com o ID fornecido"}), 404
+    except Exception as e:
+        conn.rollback()
+        cursor.close()
+        return jsonify({"message": "Erro ao atualizar projeto: " + str(e)}), 500
