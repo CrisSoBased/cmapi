@@ -66,7 +66,7 @@ def newuser():
         cursor.execute("INSERT INTO Users (nome, email, password, token) VALUES (%s, %s, %s, %s)", (nome, email, encrypted_password, encrypted_token))
         conn.commit()
         cursor.close()
-        return jsonify({"message": "Usuário inserido com sucesso!", "token": token}), 200
+        return jsonify({"message": "Usuário inserido com sucesso!", "token": encrypted_token}), 200
     except Exception as e:
         conn.rollback()
         cursor.close()
@@ -107,5 +107,46 @@ def loginft():
             return jsonify({"message": "Erro ao atualizar data_token: " + str(e)}), 500
 
     return jsonify({"token": token}), 200
+
+
+@app.route('/newproject', methods=['POST'])
+def newproject():
+    # Recebe o JSON com o nome do projeto
+    project_data = request.json
+    nome_projeto = project_data.get('nome')
+
+    # Insere o novo projeto na tabela Projects
+    cursor = conn.cursor()
+    try:
+        cursor.execute("INSERT INTO Projects (nome) VALUES (%s)", (nome_projeto,))
+        conn.commit()
+        cursor.close()
+        return jsonify({"message": "Projeto inserido com sucesso!"}), 200
+    except Exception as e:
+        conn.rollback()
+        cursor.close()
+        return jsonify({"message": "Erro ao inserir projeto: " + str(e)}), 500
     
+
+@app.route('/removeproject', methods=['POST'])
+def removeproject():
+    # Recebe o JSON com o ID único do projeto
+    project_data = request.json
+    unique_id = project_data.get('UniqueID')
+
+    # Remove o projeto da tabela Projects
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM Projects WHERE UniqueID = %s", (unique_id,))
+        conn.commit()
+        if cursor.rowcount > 0:
+            cursor.close()
+            return jsonify({"message": "Projeto removido com sucesso!"}), 200
+        else:
+            cursor.close()
+            return jsonify({"message": "Nenhum projeto encontrado com o ID fornecido"}), 404
+    except Exception as e:
+        conn.rollback()
+        cursor.close()
+        return jsonify({"message": "Erro ao remover projeto: " + str(e)}), 500
     
