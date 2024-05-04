@@ -259,3 +259,23 @@ def associargestorprojeto():
         conn.rollback()
         cursor.close()
         return jsonify({"message": "Erro ao associar gestor ao projeto: " + str(e)}), 500
+    
+    
+@app.route('/newtarefa', methods=['POST'])
+def newtarefa():
+    # Recebe o JSON com os dados da nova tarefa
+    data = request.json
+    nome = data.get('nome')
+    id_projeto = data.get('id_projeto')
+
+    # Insere a nova tarefa na tabela Tasks
+    cursor = conn.cursor()
+    try:
+        cursor.execute("INSERT INTO Tasks (nome, id_projeto) VALUES (%s, %s)", (nome, id_projeto))
+        conn.commit()
+        cursor.close()
+        return jsonify({"message": "Nova tarefa inserida com sucesso!"}), 200
+    except Exception as e:
+        conn.rollback()
+        cursor.close()
+        return jsonify({"message": "Erro ao inserir nova tarefa: " + str(e)}), 500
