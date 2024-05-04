@@ -69,11 +69,11 @@ def newuser():
         cursor.execute("INSERT INTO Users (nome, email, password, token) VALUES (%s, %s, %s, %s)", (nome, email, encrypted_password, encrypted_token))
         conn.commit()
         cursor.close()
-        return jsonify({"message": "Usuário inserido com sucesso!", "token": encrypted_token}), 200
+        return jsonify({"message": "User inserido com sucesso!", "token": encrypted_token}), 200
     except Exception as e:
         conn.rollback()
         cursor.close()
-        return jsonify({"message": "Erro ao inserir usuário: " + str(e)}), 500
+        return jsonify({"message": "Erro ao inserir user: " + str(e)}), 500
 
 
 @app.route('/loginft', methods=['POST'])
@@ -193,11 +193,11 @@ def removeruser():
         cursor.execute("DELETE FROM Users WHERE UniqueID = %s", (unique_id,))
         conn.commit()
         cursor.close()
-        return jsonify({"message": "Usuário removido com sucesso!"}), 200
+        return jsonify({"message": "User removido com sucesso!"}), 200
     except Exception as e:
         conn.rollback()
         cursor.close()
-        return jsonify({"message": "Erro ao remover usuário: " + str(e)}), 500
+        return jsonify({"message": "Erro ao remover user: " + str(e)}), 500
 
 
 @app.route('/alteraruser', methods=['POST'])
@@ -219,15 +219,15 @@ def alteraruser():
 
     if existing_user:
         cursor.close()
-        return jsonify({"message": "Erro ao atualizar usuário: email já está em uso por outro usuário"}), 400
+        return jsonify({"message": "Erro ao atualizar user: email já está em uso por outro user"}), 400
 
     # Atualiza os dados do usuário na tabela Users
     try:
         cursor.execute("UPDATE Users SET nome = %s, email = %s, password = %s WHERE UniqueID = %s", (nome, email, encrypted_password, unique_id))
         conn.commit()
         cursor.close()
-        return jsonify({"message": "Usuário atualizado com sucesso!"}), 200
+        return jsonify({"message": "User atualizado com sucesso!"}), 200
     except Exception as e:
         conn.rollback()
         cursor.close()
-        return jsonify({"message": "Erro ao atualizar usuário: " + str(e)}), 500
+        return jsonify({"message": "Erro ao atualizar user: " + str(e)}), 500
