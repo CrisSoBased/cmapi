@@ -299,3 +299,32 @@ def associarutilizadortarefa():
         conn.rollback()
         cursor.close()
         return jsonify({"message": "Erro ao inserir associação de utilizador e tarefa: " + str(e)}), 500
+
+
+@app.route('/gettarefasprojeto', methods=['POST'])
+def gettarefasprojeto():
+    # Recebe o JSON com o ID do projeto
+    data = request.json
+    id_projeto = data.get('id_projeto')
+
+    # Seleciona as tarefas do projeto especificado
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT UniqueID, nome, concluir FROM Tasks WHERE id_projeto = %s", (id_projeto,))
+        tarefas = cursor.fetchall()
+        cursor.close()
+
+        # Prepara os resultados para retorno
+        tarefas_info = []
+        for tarefa in tarefas:
+            tarefa_info = {
+                "UniqueID": tarefa[0],
+                "nome": tarefa[1],
+                "concluir": tarefa[2]
+            }
+            tarefas_info.append(tarefa_info)
+
+        return jsonify({"tarefas": tarefas_info}), 200
+    except Exception as e:
+        cursor.close()
+        return jsonify({"message": "Erro ao obter tarefas do projeto: " + str(e)}), 500
