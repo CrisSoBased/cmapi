@@ -1,5 +1,6 @@
-from flask import Flask
+from flask import Flask, request, jsonify
 import pymysql
+import hashlib
 
 app = Flask(__name__)
 
@@ -34,3 +35,29 @@ def about():
 @app.route('/teste')
 def teste():
     return 'teste deu'
+
+
+@app.route('/newuser', methods=['POST'])
+def newuser():
+    # Recebe o JSON com os dados do novo usuário
+    user_data = request.json
+    nome = user_data.get('nome')
+    email = user_data.get('email')
+    password = user_data.get('password')
+
+    # Criptografa a senha em MD5
+    encrypted_password = hashlib.md5(password.encode()).hexdigest()
+
+    # Insere os dados do novo usuário na tabela Users
+    cursor = conn.cursor()
+    try:
+        cursor.execute("INSERT INTO Users (nome, email, password) VALUES (%s, %s, %s)", (nome, email, encrypted_password))
+        conn.commit()
+        cursor.close()
+        return jsonify({"message": "Usuário inserido com sucesso!"}), 200
+    except Exception as e:
+        conn.rollback()
+        cursor.close()
+        return jsonify({"message": "Erro ao inserir usuário: " + str(e)}), 500
+
+    
