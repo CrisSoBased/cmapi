@@ -179,3 +179,55 @@ def editarproject():
         conn.rollback()
         cursor.close()
         return jsonify({"message": "Erro ao atualizar projeto: " + str(e)}), 500
+    
+
+@app.route('/removeruser', methods=['POST'])
+def removeruser():
+    # Recebe o JSON com o ID único do usuário a ser removido
+    data = request.json
+    unique_id = data.get('UniqueID')
+
+    # Remove o usuário com o ID único especificado
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM Users WHERE UniqueID = %s", (unique_id,))
+        conn.commit()
+        cursor.close()
+        return jsonify({"message": "Usuário removido com sucesso!"}), 200
+    except Exception as e:
+        conn.rollback()
+        cursor.close()
+        return jsonify({"message": "Erro ao remover usuário: " + str(e)}), 500
+
+
+@app.route('/alteraruser', methods=['POST'])
+def alteraruser():
+    # Recebe o JSON com os dados do usuário a serem atualizados
+    data = request.json
+    unique_id = data.get('UniqueID')
+    nome = data.get('nome')
+    email = data.get('email')
+    password = data.get('password')
+
+    # Criptografa a senha em MD5
+    encrypted_password = hashlib.md5(password.encode()).hexdigest()
+
+    # Verifica se o novo email já existe com um ID diferente
+    cursor = conn.cursor()
+    cursor.execute("SELECT UniqueID FROM Users WHERE email = %s AND UniqueID != %s", (email, unique_id))
+    existing_user = cursor.fetchone()
+
+    if existing_user:
+        cursor.close()
+        return jsonify({"message": "Erro ao atualizar usuário: email já está em uso por outro usuário"}), 400
+
+    # Atualiza os dados do usuário na tabela Users
+    try:
+        cursor.execute("UPDATE Users SET nome = %s, email = %s, password = %s WHERE UniqueID = %s", (nome, email, encrypted_password, unique_id))
+        conn.commit()
+        cursor.close()
+        return jsonify({"message": "Usuário atualizado com sucesso!"}), 200
+    except Exception as e:
+        conn.rollback()
+        cursor.close()
+        return jsonify({"message": "Erro ao atualizar usuário: " + str(e)}), 500
