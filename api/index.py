@@ -401,3 +401,85 @@ def concluirprojeto():
         conn.rollback()
         cursor.close()
         return jsonify({"message": "Erro ao concluir projeto e inserir avaliações: " + str(e)}), 500
+
+
+@app.route('/updtavaliacao', methods=['POST'])
+def updtavaliacao():
+    # Recebe o JSON com os dados da avaliação
+    data = request.json
+    id_projeto = data.get('id_projeto')
+    id_utilizador = data.get('id_utilizador')
+    rate = data.get('rate')
+    comentario = data.get('comentario')
+
+    # Atualiza a avaliação na tabela avaliacao
+    cursor = conn.cursor()
+    try:
+        cursor.execute("UPDATE avaliacao SET rate = %s, comentario = %s WHERE id_projeto = %s AND id_utilizador = %s", (rate, comentario, id_projeto, id_utilizador))
+        conn.commit()
+        cursor.close()
+        return jsonify({"message": "Avaliação atualizada com sucesso!"}), 200
+    except Exception as e:
+        conn.rollback()
+        cursor.close()
+        return jsonify({"message": "Erro ao atualizar avaliação: " + str(e)}), 500
+    
+    
+
+@app.route('/updtusertask', methods=['POST'])
+def updtusertask():
+    # Recebe o JSON com os dados da tarefa do utilizador
+    data = request.json
+    id_task = data.get('id_task')
+    id_utilizador = data.get('id_utilizador')
+    data_ini = data.get('data_ini')
+    local = data.get('local')
+    temp_disp = data.get('temp_disp')
+    observacoes = data.get('observacoes')
+    concluido = data.get('concluido')
+
+    # Atualiza a entrada na tabela usertask
+    cursor = conn.cursor()
+    try:
+        cursor.execute("UPDATE usertask SET data_ini = %s, local = %s, temp_disp = %s, observacoes = %s, concluido = %s WHERE id_task = %s AND id_utilizador = %s", (data_ini, local, temp_disp, observacoes, concluido, id_task, id_utilizador))
+        conn.commit()
+        cursor.close()
+        return jsonify({"message": "Tarefa do utilizador atualizada com sucesso!"}), 200
+    except Exception as e:
+        conn.rollback()
+        cursor.close()
+        return jsonify({"message": "Erro ao atualizar tarefa do utilizador: " + str(e)}), 500
+    
+    
+@app.route('/getusertarefas', methods=['POST'])
+def getusertarefas():
+    # Recebe o JSON com o ID do utilizador
+    data = request.json
+    id_utilizador = data.get('id_utilizador')
+
+    # Busca todas as tarefas associadas ao utilizador na tabela usertask
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT * FROM usertask WHERE id_utilizador = %s", (id_utilizador,))
+        tarefas = cursor.fetchall()
+        cursor.close()
+
+        # Prepara os resultados para retorno
+        tarefas_info = []
+        for tarefa in tarefas:
+            tarefa_info = {
+                "id_task": tarefa[0],
+                "id_utilizador": tarefa[1],
+                "data_ini": str(tarefa[2]),
+                "local": tarefa[3],
+                "temp_disp": str(tarefa[4]),
+                "observacoes": tarefa[5],
+                "concluido": tarefa[6]
+            }
+            tarefas_info.append(tarefa_info)
+
+        return jsonify({"tarefas": tarefas_info}), 200
+    except Exception as e:
+        cursor.close()
+        return jsonify({"message": "Erro ao obter tarefas do utilizador: " + str(e)}), 500
+    
