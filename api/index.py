@@ -464,7 +464,7 @@ def getusertarefas():
         tarefas = cursor.fetchall()
         cursor.close()
 
-        # Prepara os resultados para retorno
+        # Preparaa os resultados para retorno
         tarefas_info = []
         for tarefa in tarefas:
             tarefa_info = {
