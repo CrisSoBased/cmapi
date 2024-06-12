@@ -1,9 +1,10 @@
 from flask import Flask, request, jsonify
-from datetime import datetime
+from datetime import datetime, timedelta
 import pymysql
 import hashlib
 import random
 import string
+import jwt
 
 
 
@@ -78,39 +79,57 @@ def newuser():
 
 @app.route('/loginft', methods=['POST'])
 def loginft():
-    # aRecebe o JSON com os dados de login
     login_data = request.json
     email = login_data.get('email')
     password = login_data.get('password')
 
-    # Criptografa a senha em MD5
     encrypted_password = hashlib.md5(password.encode()).hexdigest()
 
-    # Consulta o banco de dados para verificar as credenciais
     cursor = conn.cursor()
-    cursor.execute("SELECT token, data_token FROM Users WHERE email = %s AND password = %s", (email, encrypted_password))
+    cursor.execute("SELECT UniqueID, email FROM Users WHERE email = %s AND password = %s", (email, encrypted_password))
     user = cursor.fetchone()
     cursor.close()
 
     if user is None:
         return jsonify({"message": "Credenciais inválidas"}), 401
 
-    token, data_token = user
+    unique_id, email = user
 
-    # Se o data_token estiver vazio, atualiza-o com a data atual
-    if not data_token:
-        cursor = conn.cursor()
-        try:
-            cursor.execute("UPDATE Users SET data_token = %s WHERE email = %s", (datetime.now(), email))
-            conn.commit()
-            cursor.close()
-        except Exception as e:
-            conn.rollback()
-            cursor.close()
-            return jsonify({"message": "Erro ao atualizar data_token: " + str(e)}), 500
+    token = jwt.encode(
+        {
+            'user_id': unique_id,
+            'exp': datetime.utcnow() + timedelta(hours=24)  # Token válido por 24 horas
+        },
+        app.config['SECRET_KEY'],
+        algorithm='HS256'
+    )
 
     return jsonify({"token": token}), 200
 
+
+def token_required(f):
+    def decorator(*args, **kwargs):
+        token = None
+
+        if 'x-access-token' in request.headers:
+            token = request.headers['x-access-token']
+
+        if not token:
+            return jsonify({"message": "Token é necessário!"}), 401
+
+        try:
+            data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM Users WHERE UniqueID = %s", (data['user_id'],))
+            current_user = cursor.fetchone()
+            cursor.close()
+        except Exception as e:
+            return jsonify({"message": "Token é inválido!"}), 401
+
+        return f(current_user, *args, **kwargs)
+
+    decorator.__name__ = f.__name__
+    return decorator
 
 @app.route('/newproject', methods=['POST'])
 def newproject():
