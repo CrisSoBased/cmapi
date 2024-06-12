@@ -132,6 +132,7 @@ def token_required(f):
     return decorator
 
 @app.route('/newproject', methods=['POST'])
+@token_required
 def newproject():
     # Recebe o JSON com o nome do projeto
     project_data = request.json
@@ -151,6 +152,7 @@ def newproject():
     
 
 @app.route('/removeproject', methods=['POST'])
+@token_required
 def removeproject():
     # Recebe o JSON com o ID único do projeto
     project_data = request.json
@@ -174,6 +176,7 @@ def removeproject():
 
 
 @app.route('/editarproject', methods=['POST'])
+@token_required
 def editarproject():
     # Recebe o JSON com os dados do projeto a ser editado
     project_data = request.json
@@ -201,6 +204,7 @@ def editarproject():
     
 
 @app.route('/removeruser', methods=['POST'])
+@token_required
 def removeruser():
     # Recebe o JSON com o ID único do usuário a ser removido
     data = request.json
@@ -220,6 +224,7 @@ def removeruser():
 
 
 @app.route('/alteraruser', methods=['POST'])
+@token_required
 def alteraruser():
     # Recebe o JSON com os dados do user a serem atualizados
     data = request.json
@@ -253,6 +258,7 @@ def alteraruser():
     
     
 @app.route('/associargestorprojeto', methods=['POST'])
+@token_required
 def associargestorprojeto():
     # Recebe o JSON com os dados do projeto e do novo gestor
     data = request.json
@@ -281,6 +287,7 @@ def associargestorprojeto():
     
     
 @app.route('/newtarefa', methods=['POST'])
+@token_required
 def newtarefa():
     # Recebe o JSON com os dados da nova tarefa
     data = request.json
@@ -301,6 +308,7 @@ def newtarefa():
 
 
 @app.route('/associarutilizadortarefa', methods=['POST'])
+@token_required
 def associarutilizadortarefa():
     # Recebe o JSON com os IDs do utilizador e da tarefa
     data = request.json
@@ -321,6 +329,7 @@ def associarutilizadortarefa():
 
 
 @app.route('/gettarefasprojeto', methods=['POST'])
+@token_required
 def gettarefasprojeto():
     # Recebe o JSON com o ID do projeto
     data = request.json
@@ -350,6 +359,7 @@ def gettarefasprojeto():
     
 
 @app.route('/updutlizadoresprojeto', methods=['POST'])
+@token_required
 def updutlizadoresprojeto():
     # Recebe o JSON com o ID do projeto
     data = request.json
@@ -387,6 +397,7 @@ def updutlizadoresprojeto():
 
 
 @app.route('/concluirprojeto', methods=['POST'])
+@token_required
 def concluirprojeto():
     # Recebe o JSON com o ID do projeto
     data = request.json
@@ -423,6 +434,7 @@ def concluirprojeto():
 
 
 @app.route('/updtavaliacao', methods=['POST'])
+@token_required
 def updtavaliacao():
     # Recebe o JSON com os dados da avaliação
     data = request.json
@@ -446,6 +458,7 @@ def updtavaliacao():
     
 
 @app.route('/updtusertask', methods=['POST'])
+@token_required
 def updtusertask():
     # Recebe o JSON com os dados da tarefa do utilizador
     data = request.json
@@ -471,6 +484,7 @@ def updtusertask():
     
     
 @app.route('/getusertarefas', methods=['POST'])
+@token_required
 def getusertarefas():
     # Recebe o JSON com o ID do utilizador
     data = request.json
