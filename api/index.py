@@ -51,7 +51,7 @@ def teste():
 def newuser():
     # Recebe o JSON com os dados do novo usuário
     user_data = request.json
-    nome = user_data.get('nome')
+    nome = user_data.get('username')
     email = user_data.get('email')
     password = user_data.get('password')
 
