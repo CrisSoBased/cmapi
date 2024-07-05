@@ -74,7 +74,7 @@ def newuser():
     except Exception as e:
         conn.rollback()
         cursor.close()
-        return jsonify({"message": "Erro ao inserir user: " + str(e)}), 500
+        return jsonify({"message": "Erro ao inserir user: " + str(e) + "nome : " + nome + "email : " + email + "pass: " + password}), 500
 
 
 @app.route('/loginft', methods=['POST'])
