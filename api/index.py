@@ -15,6 +15,8 @@ app.config['MYSQL_HOST'] = 'cristovao.portugalinteractivo.com'
 app.config['MYSQL_USER'] = 'cristovao_bd'
 app.config['MYSQL_PASSWORD'] = 'B6teCbBcemmw'
 app.config['MYSQL_DB'] = 'cristovao_bd'
+app.config['SECRET_KEY'] = 'your_secret_key'
+
 
 # Inicialização da conexão com o banco de dados
 conn = pymysql.connect(
