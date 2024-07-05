@@ -26,7 +26,7 @@ conn = pymysql.connect(
     db=app.config['MYSQL_DB']
 )
 
-
+#commit
 @app.route('/')
 def home():
     """
