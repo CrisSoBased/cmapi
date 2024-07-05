@@ -109,12 +109,14 @@ def loginft():
     unique_id, email = user
 
     try:
+        secret_key = app.config['SECRET_KEY']
+        print("Secret key type:", type(secret_key))  # Ensure it's a string
         token = jwt.encode(
             {
                 'user_id': unique_id,
                 'exp': datetime.utcnow() + timedelta(hours=24)  # Token válido por 24 horas
             },
-            app.config['SECRET_KEY'],
+            secret_key,
             algorithm='HS256'
         )
         print("Generated token:", token)
@@ -123,7 +125,6 @@ def loginft():
         return jsonify({"message": "Token generation error"}), 500
 
     return jsonify({"token": token}), 200
-
 
 def token_required(f):
     def decorator(*args, **kwargs):
