@@ -70,7 +70,7 @@ def newuser():
         cursor.execute("INSERT INTO Users (nome, email, password, token) VALUES (%s, %s, %s, %s)", (nome, email, encrypted_password, encrypted_token))
         conn.commit()
         cursor.close()
-        return jsonify({"message": "User inserido com sucesso!", "token": encrypted_token}), 200
+        return jsonify({"message": "User inserido com sucesso!"}), 200
     except Exception as e:
         conn.rollback()
         cursor.close()
@@ -83,26 +83,44 @@ def loginft():
     email = login_data.get('email')
     password = login_data.get('password')
 
+    print("Received login data:", login_data)
+    print("Email:", email)
+    print("Password:", password)
+
+    # Encrypt the password
     encrypted_password = hashlib.md5(password.encode()).hexdigest()
+    print("Encrypted password:", encrypted_password)
 
     cursor = conn.cursor()
-    cursor.execute("SELECT UniqueID, email FROM Users WHERE email = %s AND password = %s", (email, encrypted_password))
-    user = cursor.fetchone()
-    cursor.close()
+    try:
+        cursor.execute("SELECT UniqueID, email FROM Users WHERE email = %s AND password = %s", (email, encrypted_password))
+        user = cursor.fetchone()
+        print("User fetched from DB:", user)
+    except Exception as e:
+        print("Database error:", str(e))
+        return jsonify({"message": "Internal server error"}), 500
+    finally:
+        cursor.close()
 
     if user is None:
+        print("Invalid credentials")
         return jsonify({"message": "Credenciais inválidas"}), 401
 
     unique_id, email = user
 
-    token = jwt.encode(
-        {
-            'user_id': unique_id,
-            'exp': datetime.utcnow() + timedelta(hours=24)  # Token válido por 24 horas
-        },
-        app.config['SECRET_KEY'],
-        algorithm='HS256'
-    )
+    try:
+        token = jwt.encode(
+            {
+                'user_id': unique_id,
+                'exp': datetime.utcnow() + timedelta(hours=24)  # Token válido por 24 horas
+            },
+            app.config['SECRET_KEY'],
+            algorithm='HS256'
+        )
+        print("Generated token:", token)
+    except Exception as e:
+        print("JWT encoding error:", str(e))
+        return jsonify({"message": "Token generation error"}), 500
 
     return jsonify({"token": token}), 200
 
