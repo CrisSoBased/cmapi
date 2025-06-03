@@ -537,3 +537,44 @@ def getusertarefas():
         cursor.close()
         return jsonify({"message": "Erro ao obter tarefas do utilizador: " + str(e)}), 500
     
+    
+    
+@app.route('/getuser', methods=['GET'])
+@token_required
+def getuser():
+    unique_id = request.args.get('UniqueID')
+
+    if not unique_id:
+        return jsonify({"message": "Parâmetro 'UniqueID' é obrigatório"}), 400
+
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            SELECT UniqueID, nome, email, foto, desc_perfil, tipo, ativo, data_token
+            FROM Users
+            WHERE UniqueID = %s
+        """, (unique_id,))
+        user = cursor.fetchone()
+        cursor.close()
+
+        if not user:
+            return jsonify({"message": "Usuário não encontrado"}), 404
+
+        # Mapeia os resultados para um dicionário
+        user_data = {
+            "UniqueID": user[0],
+            "nome": user[1],
+            "email": user[2],
+            "foto": user[3],
+            "desc_perfil": user[4],
+            "tipo": user[5],
+            "ativo": user[6],
+            "data_token": user[7].isoformat() if user[7] else None
+        }
+
+        return jsonify(user_data), 200
+
+    except Exception as e:
+        cursor.close()
+        return jsonify({"message": "Erro ao obter dados do usuário: " + str(e)}), 500
+    
