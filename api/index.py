@@ -578,3 +578,27 @@ def getuser():
         cursor.close()
         return jsonify({"message": "Erro ao obter dados do usuário: " + str(e)}), 500
     
+    
+    
+@app.route('/getprojectbymanager', methods=['POST'])
+@token_required
+def getprojectbymanager():
+    # Recebe o JSON com o ID do gestor
+    data = request.json
+    id_gestor = data.get('id_gestor')
+
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT * FROM Projects WHERE id_gestor = %s", (id_gestor,))
+        projetos = cursor.fetchall()
+        columns = [desc[0] for desc in cursor.description]
+        cursor.close()
+
+        if projetos:
+            result = [dict(zip(columns, row)) for row in projetos]
+            return jsonify(result), 200
+        else:
+            return jsonify({"message": "Nenhum projeto encontrado para o gestor fornecido"}), 404
+    except Exception as e:
+        cursor.close()
+        return jsonify({"message": "Erro ao buscar projetos: " + str(e)}), 500
