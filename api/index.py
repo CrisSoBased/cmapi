@@ -86,47 +86,49 @@ def loginft():
     password = login_data.get('password')
 
     print("Received login data:", login_data)
-    print("Email:", email)
-    print("Password:", password)
 
-    # Encrypt the password
     encrypted_password = hashlib.md5(password.encode()).hexdigest()
-    print("Encrypted password:", encrypted_password)
-
     cursor = conn.cursor()
+
     try:
-        cursor.execute("SELECT UniqueID, email FROM Users WHERE email = %s AND password = %s", (email, encrypted_password))
+        # Fetch full user details
+        cursor.execute("""
+            SELECT UniqueID, email, nome, tipo 
+            FROM Users 
+            WHERE email = %s AND password = %s
+        """, (email, encrypted_password))
         user = cursor.fetchone()
-        print("User fetched from DB:", user)
     except Exception as e:
-        print("Database error:", str(e))
+        print("DB error:", str(e))
         return jsonify({"message": "Internal server error"}), 500
     finally:
         cursor.close()
 
     if user is None:
-        print("Invalid credentials")
         return jsonify({"message": "Credenciais inválidas"}), 401
 
-    unique_id, email = user
+    unique_id, email, nome, tipo = user
 
     try:
         secret_key = app.config['SECRET_KEY']
-        print("Secret key type:", type(secret_key))  # Ensure it's a string
         token = jwt.encode(
-            {
-                'user_id': unique_id,
-                'exp': datetime.utcnow() + timedelta(hours=24)  # Token válido por 24 horas
-            },
+            {'user_id': unique_id, 'exp': datetime.utcnow() + timedelta(hours=24)},
             secret_key,
             algorithm='HS256'
         )
-        print("Generated token:", token)
     except Exception as e:
-        print("JWT encoding error:", str(e))
+        print("JWT error:", str(e))
         return jsonify({"message": "Token generation error"}), 500
 
-    return jsonify({"token": token}), 200
+    # ✅ Include user details in response
+    return jsonify({
+        "token": token,
+        "user_id": unique_id,
+        "nome": nome,
+        "email": email,
+        "role": tipo
+    }), 200
+
 
 def token_required(f):
     def decorator(*args, **kwargs):
@@ -154,22 +156,42 @@ def token_required(f):
 
 @app.route('/newproject', methods=['POST'])
 @token_required
-def newproject():
-    # Recebe o JSON com o nome do projeto
+def newproject(current_user_id):
     project_data = request.json
     nome_projeto = project_data.get('nome')
 
-    # Insere o novo projeto na tabela Projects
+    if not nome_projeto:
+        return jsonify({"message": "O nome do projeto é obrigatório"}), 400
+
     cursor = conn.cursor()
     try:
+        # 1. Insert into Projects table
         cursor.execute("INSERT INTO Projects (nome) VALUES (%s)", (nome_projeto,))
         conn.commit()
-        cursor.close()
-        return jsonify({"message": "Projeto inserido com sucesso!"}), 200
+
+        # 2. Get the ID of the newly inserted project
+        cursor.execute("SELECT LAST_INSERT_ID()")
+        project_id = cursor.fetchone()[0]
+
+        # 3. Link the user to the project (assuming a junction table exists)
+        cursor.execute("""
+            INSERT INTO UserProjects (user_id, project_id, role)
+            VALUES (%s, %s, 'owner')
+        """, (current_user_id, project_id))
+        conn.commit()
+
+        return jsonify({
+            "message": "Projeto criado com sucesso!",
+            "project_id": project_id
+        }), 200
+
     except Exception as e:
         conn.rollback()
+        return jsonify({"message": "Erro ao criar projeto: " + str(e)}), 500
+
+    finally:
         cursor.close()
-        return jsonify({"message": "Erro ao inserir projeto: " + str(e)}), 500
+
     
 
 @app.route('/removeproject', methods=['POST'])
