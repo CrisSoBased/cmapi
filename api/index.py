@@ -624,3 +624,20 @@ def getprojectbymanager():
     except Exception as e:
         cursor.close()
         return jsonify({"message": "Erro ao buscar projetos: " + str(e)}), 500
+    
+
+
+@app.route('/hasproject', methods=['GET'])
+@token_required
+def hasproject(current_user):
+    user_id = current_user[0]  # assuming current_user is a row tuple and UniqueID is at index 0
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT COUNT(*) FROM UserProjects WHERE user_id = %s", (user_id,))
+        result = cursor.fetchone()
+        has_project = result[0] > 0
+        return jsonify({"hasProject": has_project}), 200
+    except Exception as e:
+        return jsonify({"message": "Erro ao verificar projetos: " + str(e)}), 500
+    finally:
+        cursor.close()
