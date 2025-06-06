@@ -165,15 +165,13 @@ def newproject(current_user_id):
 
     cursor = conn.cursor()
     try:
-        # 1. Insert into Projects table
+        # 👇 This comma is critical
         cursor.execute("INSERT INTO Projects (nome) VALUES (%s)", (nome_projeto,))
         conn.commit()
 
-        # 2. Get the ID of the newly inserted project
         cursor.execute("SELECT LAST_INSERT_ID()")
         project_id = cursor.fetchone()[0]
 
-        # 3. Link the user to the project (assuming a junction table exists)
         cursor.execute("""
             INSERT INTO UserProjects (user_id, project_id, role)
             VALUES (%s, %s, %s)
@@ -191,6 +189,7 @@ def newproject(current_user_id):
 
     finally:
         cursor.close()
+
 
     
 
