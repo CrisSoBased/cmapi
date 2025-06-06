@@ -176,8 +176,8 @@ def newproject(current_user_id):
         # 3. Link the user to the project (assuming a junction table exists)
         cursor.execute("""
             INSERT INTO UserProjects (user_id, project_id, role)
-            VALUES (%s, %s, 'owner')
-        """, (current_user_id, project_id))
+            VALUES (%s, %s, %s)
+        """, (current_user_id, project_id, 'owner'))
         conn.commit()
 
         return jsonify({
