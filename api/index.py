@@ -171,10 +171,11 @@ def newproject(current_user_id):
         cursor.execute("SELECT LAST_INSERT_ID()")
         project_id = cursor.fetchone()[0]
 
-        cursor.execute(
-            "INSERT INTO UserProjects (user_id, project_id, role) VALUES (%s, %s, %s)",
-            (current_user_id, project_id, 'owner')
-        )
+        cursor.execute("""
+            INSERT INTO UserProjects (project_id, role, user_id)
+            VALUES (%s, %s, %s)
+        """, (project_id, 'owner', current_user_id))
+
         conn.commit()
 
         return jsonify({
