@@ -56,21 +56,18 @@ def newuser():
     email = user_data.get('email')
     password = user_data.get('password')
 
-    # Generate raw and encrypted token
     token = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
     encrypted_password = hashlib.md5(password.encode()).hexdigest()
     encrypted_token = hashlib.md5(token.encode()).hexdigest()
 
     cursor = conn.cursor()
     try:
-        # Insert user into Users table
         cursor.execute("""
             INSERT INTO Users (nome, email, password, token)
             VALUES (%s, %s, %s, %s)
         """, (nome, email, encrypted_password, encrypted_token))
         conn.commit()
 
-        # Get the new user's UniqueID (auto-incremented PK)
         cursor.execute("SELECT LAST_INSERT_ID()")
         row = cursor.fetchone()
         if not row or row[0] is None:
