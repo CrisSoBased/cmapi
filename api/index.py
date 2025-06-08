@@ -692,3 +692,27 @@ def check_projects_schema():
         return jsonify({"error": str(e)}), 500
     finally:
         cursor.close()
+
+
+@app.route('/debug/userprojects-schema')
+def check_userprojects_schema():
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DESCRIBE UserProjects")
+        columns = cursor.fetchall()
+        result = []
+        for col in columns:
+            result.append({
+                "Field": col[0],
+                "Type": col[1],
+                "Null": col[2],
+                "Key": col[3],
+                "Default": col[4],
+                "Extra": col[5]
+            })
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+
