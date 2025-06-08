@@ -169,7 +169,14 @@ def newproject(current_user_id):
         conn.commit()
 
         cursor.execute("SELECT LAST_INSERT_ID()")
-        project_id = cursor.fetchone()[0]
+        row = cursor.fetchone()
+
+        if not row or row[0] is None:
+            raise Exception("Falha ao obter o ID do projeto recém-criado.")
+
+        project_id = row[0]
+        print("DEBUG - Novo project_id:", project_id)
+
 
         cursor.execute("""
             INSERT INTO UserProjects (project_id, role, user_id)
