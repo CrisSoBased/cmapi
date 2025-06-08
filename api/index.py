@@ -51,32 +51,50 @@ def teste():
 
 @app.route('/newuser', methods=['POST'])
 def newuser():
-    # Recebe o JSON com os dados do novo usuário
     user_data = request.json
     nome = user_data.get('nome')
     email = user_data.get('email')
     password = user_data.get('password')
 
-    # Gerar um token aleatório de 12 caracteres
+    # Generate raw and encrypted token
     token = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
-
-    # Criptografa a senha em MD5
     encrypted_password = hashlib.md5(password.encode()).hexdigest()
-
-    # Criptografa o token em MD5
     encrypted_token = hashlib.md5(token.encode()).hexdigest()
 
-    # Insere os dados do novo usuário na tabela Users
     cursor = conn.cursor()
     try:
-        cursor.execute("INSERT INTO Users (nome, email, password, token) VALUES (%s, %s, %s, %s)", (nome, email, encrypted_password, encrypted_token))
+        # Insert user into Users table
+        cursor.execute("""
+            INSERT INTO Users (nome, email, password, token)
+            VALUES (%s, %s, %s, %s)
+        """, (nome, email, encrypted_password, encrypted_token))
         conn.commit()
+
+        # Get the new user's UniqueID (auto-incremented PK)
+        cursor.execute("SELECT LAST_INSERT_ID()")
+        row = cursor.fetchone()
+        if not row or row[0] is None:
+            raise Exception("Falha ao obter o ID do usuário recém-criado.")
+
+        user_id = row[0]
+        print("DEBUG - Novo usuário criado com UniqueID:", user_id)
         cursor.close()
-        return jsonify({"message": "User inserido com sucesso!"}), 200
+
+        return jsonify({
+            "message": "User inserido com sucesso!",
+            "user_id": user_id,
+            "token": encrypted_token
+        }), 200
+
     except Exception as e:
         conn.rollback()
         cursor.close()
-        return jsonify({"message": "Erro ao inserir user: " + str(e) + "nome : " + nome + "email : " + email + "pass: " + password}), 500
+        return jsonify({
+            "message": "Erro ao inserir user: " + str(e),
+            "nome": nome,
+            "email": email
+        }), 500
+
 
 
 @app.route('/loginft', methods=['POST'])
