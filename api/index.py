@@ -165,17 +165,16 @@ def newproject(current_user_id):
 
     cursor = conn.cursor()
     try:
-        # 👇 This comma is critical
         cursor.execute("INSERT INTO Projects (nome) VALUES (%s)", (nome_projeto,))
         conn.commit()
 
         cursor.execute("SELECT LAST_INSERT_ID()")
         project_id = cursor.fetchone()[0]
 
-        cursor.execute("""
-            INSERT INTO UserProjects (user_id, project_id, role)
-            VALUES (%s, %s, %s)
-        """, (current_user_id, project_id, 'owner'))
+        cursor.execute(
+            "INSERT INTO UserProjects (user_id, project_id, role) VALUES (%s, %s, %s)",
+            (current_user_id, project_id, 'owner')
+        )
         conn.commit()
 
         return jsonify({
@@ -189,6 +188,7 @@ def newproject(current_user_id):
 
     finally:
         cursor.close()
+
 
 
     
