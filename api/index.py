@@ -746,3 +746,38 @@ def test_insert():
         return f"❌ Insert failed: {str(e)}", 500
     finally:
         cursor.close()
+
+
+
+@app.route('/debug/users')
+def debug_users():
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT UniqueID, nome, email FROM Users")
+        users = cursor.fetchall()
+        return jsonify(users), 200
+    finally:
+        cursor.close()
+
+
+@app.route('/debug/projects')
+def debug_projects():
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT UniqueID, nome FROM Projects")
+        projects = cursor.fetchall()
+        return jsonify(projects), 200
+    finally:
+        cursor.close()
+
+
+@app.route('/debug/userprojects')
+def debug_userprojects():
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT user_id, project_id, role FROM UserProjects")
+        links = cursor.fetchall()
+        return jsonify(links), 200
+    finally:
+        cursor.close()
+
