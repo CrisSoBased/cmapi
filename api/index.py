@@ -154,6 +154,8 @@ def token_required(f):
     decorator.__name__ = f.__name__
     return decorator
 
+
+
 @app.route('/newproject', methods=['POST'])
 @token_required
 def newproject(current_user_id):
@@ -165,29 +167,31 @@ def newproject(current_user_id):
 
     cursor = conn.cursor()
     try:
+        # Insert project with only the required field
         cursor.execute("INSERT INTO Projects (nome) VALUES (%s)", (nome_projeto,))
         conn.commit()
 
+        # Get auto-incremented UniqueID
         cursor.execute("SELECT LAST_INSERT_ID()")
         row = cursor.fetchone()
 
         if not row or row[0] is None:
-            raise Exception("Falha ao obter o ID do projeto recém-criado.")
+            raise Exception("Falha ao obter o UniqueID do projeto recém-criado.")
 
-        project_id = row[0]
-        print("DEBUG - Novo project_id:", project_id)
+        project_unique_id = row[0]
+        print("DEBUG - Novo project UniqueID:", project_unique_id)
 
-
+        # Link project to user as 'owner'
         cursor.execute("""
             INSERT INTO UserProjects (project_id, role, user_id)
             VALUES (%s, %s, %s)
-        """, (project_id, 'owner', current_user_id))
+        """, (project_unique_id, 'owner', current_user_id))
 
         conn.commit()
 
         return jsonify({
             "message": "Projeto criado com sucesso!",
-            "project_id": project_id
+            "project_id": project_unique_id
         }), 200
 
     except Exception as e:
@@ -196,6 +200,7 @@ def newproject(current_user_id):
 
     finally:
         cursor.close()
+
 
 
 
