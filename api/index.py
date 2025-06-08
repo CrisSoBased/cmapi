@@ -679,11 +679,10 @@ def getprojectbymanager():
 
 @app.route('/hasproject', methods=['GET'])
 @token_required
-def hasproject(current_user):
-    user_id = current_user[0]  # assuming current_user is a row tuple and UniqueID is at index 0
+def hasproject(current_user_id):  # rename to reflect it's just an ID
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT COUNT(*) FROM UserProjects WHERE user_id = %s", (user_id,))
+        cursor.execute("SELECT COUNT(*) FROM UserProjects WHERE user_id = %s", (current_user_id,))
         result = cursor.fetchone()
         has_project = result[0] > 0
         return jsonify({"hasProject": has_project}), 200
@@ -691,6 +690,7 @@ def hasproject(current_user):
         return jsonify({"message": "Erro ao verificar projetos: " + str(e)}), 500
     finally:
         cursor.close()
+
 
 
 @app.route('/debug/check-projects-table')
