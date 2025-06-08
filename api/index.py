@@ -717,3 +717,17 @@ def check_userprojects_schema():
     finally:
         cursor.close()
 
+@app.route('/debug/test-insert')
+def test_insert():
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO UserProjects (user_id, project_id, role)
+            VALUES (%s, %s, %s)
+        """, (999, 888, 'test'))
+        conn.commit()
+        return "✅ Insert successful", 200
+    except Exception as e:
+        return f"❌ Insert failed: {str(e)}", 500
+    finally:
+        cursor.close()
