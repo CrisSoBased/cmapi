@@ -648,3 +648,19 @@ def hasproject(current_user):
         return jsonify({"message": "Erro ao verificar projetos: " + str(e)}), 500
     finally:
         cursor.close()
+
+
+@app.route('/debug/check-projects-table')
+def check_projects_table():
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SHOW TABLES LIKE 'Projects'")
+        result = cursor.fetchone()
+        if result:
+            return "✅ Projects table exists", 200
+        else:
+            return "❌ Projects table does NOT exist", 404
+    except Exception as e:
+        return f"❌ Error checking table: {str(e)}", 500
+    finally:
+        cursor.close()
