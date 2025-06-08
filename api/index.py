@@ -164,7 +164,7 @@ def token_required(f):
         except Exception as e:
             return jsonify({"message": "Token é inválido!"}), 401
 
-        return f(current_user, *args, **kwargs)
+        return f(current_user[0], *args, **kwargs)
 
     decorator.__name__ = f.__name__
     return decorator
