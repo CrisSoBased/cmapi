@@ -193,13 +193,22 @@ def newproject(current_user_id):
             raise Exception("Falha ao obter o ID do projeto recém-criado.")
         
         project_id = row[0]
-        print(f"DEBUG - Projeto '{nome_projeto}' criado com ID: {project_id}")
+        print(f"✅ DEBUG - Projeto '{nome_projeto}' criado com ID: {project_id}")
 
         # Link user to the project as owner
-        cursor.execute("""
-            INSERT INTO UserProjects (user_id, project_id, role)
-            VALUES (%s, %s, %s)
-        """, (current_user_id, project_id, 'owner'))
+        print("➡️ DEBUG - Tentando inserir em UserProjects com os seguintes valores:")
+        print("   user_id:", current_user_id)
+        print("   project_id:", project_id)
+        print("   role: 'owner'")
+
+        try:
+            cursor.execute("""
+                INSERT INTO UserProjects (user_id, project_id, role)
+                VALUES (%s, %s, %s)
+            """, (current_user_id, project_id, 'owner'))
+        except Exception as insert_error:
+            print("❌ ERRO ao inserir em UserProjects:", str(insert_error))
+            raise
 
         conn.commit()
 
@@ -210,11 +219,12 @@ def newproject(current_user_id):
 
     except Exception as e:
         conn.rollback()
-        print("Erro ao criar projeto:", str(e))
+        print("❌ ERRO ao criar projeto:", str(e))
         return jsonify({"message": "Erro ao criar projeto: " + str(e)}), 500
 
     finally:
         cursor.close()
+
 
 
 
