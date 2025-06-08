@@ -183,9 +183,10 @@ def newproject(current_user_id):
 
         # Link project to user as 'owner'
         cursor.execute("""
-            INSERT INTO UserProjects (project_id, role, user_id)
+            INSERT INTO UserProjects (user_id, project_id, role)
             VALUES (%s, %s, %s)
-        """, (project_unique_id, 'owner', current_user_id))
+        """, (current_user_id, project_unique_id, 'owner'))
+
 
         conn.commit()
 
