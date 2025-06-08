@@ -193,13 +193,18 @@ def newproject(current_user_id):
             raise Exception("Falha ao obter o ID do projeto recém-criado.")
         
         project_id = row[0]
-        print(f"✅ DEBUG - Projeto '{nome_projeto}' criado com ID: {project_id}")
 
-        # Link user to the project as owner
-        print("➡️ DEBUG - Tentando inserir em UserProjects com os seguintes valores:")
-        print("   user_id:", current_user_id)
-        print("   project_id:", project_id)
-        print("   role: 'owner'")
+        # Prepare debug info
+        debug_info = {
+            "user_id": current_user_id,
+            "project_id": project_id,
+            "role": 'owner',
+            "param_types": {
+                "user_id": str(type(current_user_id)),
+                "project_id": str(type(project_id)),
+                "role": str(type('owner'))
+            }
+        }
 
         try:
             cursor.execute("""
@@ -207,23 +212,30 @@ def newproject(current_user_id):
                 VALUES (%s, %s, %s)
             """, (current_user_id, project_id, 'owner'))
         except Exception as insert_error:
-            print("❌ ERRO ao inserir em UserProjects:", str(insert_error))
-            raise
+            conn.rollback()
+            return jsonify({
+                "message": "Erro ao inserir em UserProjects",
+                "error": str(insert_error),
+                "debug": debug_info
+            }), 500
 
         conn.commit()
 
         return jsonify({
             "message": "Projeto criado com sucesso!",
-            "project_id": project_id
+            "project_id": project_id,
+            "debug": debug_info
         }), 200
 
     except Exception as e:
         conn.rollback()
-        print("❌ ERRO ao criar projeto:", str(e))
-        return jsonify({"message": "Erro ao criar projeto: " + str(e)}), 500
+        return jsonify({
+            "message": "Erro ao criar projeto: " + str(e)
+        }), 500
 
     finally:
         cursor.close()
+
 
 
 
