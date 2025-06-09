@@ -237,6 +237,24 @@ def newproject(current_user_id):
         cursor.close()
 
 
+@app.route('/userprojects', methods=['GET'])
+@token_required
+def get_user_projects(current_user):
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            SELECT p.UniqueID, p.nome
+            FROM Projects p
+            JOIN UserProjects up ON p.UniqueID = up.project_id
+            WHERE up.user_id = %s
+        """, (current_user[0],))
+        results = cursor.fetchall()
+        projects = [{"id": row[0], "name": row[1]} for row in results]
+        return jsonify(projects), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
 
 
 
