@@ -257,6 +257,101 @@ def get_user_projects(current_user_id):  # already an int!
         cursor.close()
 
 
+@app.route('/getproject', methods=['GET'])
+@token_required
+def get_project(current_user_id):
+    project_id = request.args.get('project_id')
+    if not project_id:
+        return jsonify({"message": "Parâmetro 'project_id' é obrigatório"}), 400
+
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            SELECT UniqueID, nome, descricao, data_ini
+            FROM Projects
+            WHERE UniqueID = %s
+        """, (project_id,))
+        row = cursor.fetchone()
+        cursor.close()
+
+        if not row:
+            return jsonify({"message": "Projeto não encontrado"}), 404
+
+        return jsonify({
+            "id": row[0],
+            "name": row[1],
+            "description": row[2],
+            "start_date": row[3].isoformat() if row[3] else None
+        }), 200
+
+    except Exception as e:
+        cursor.close()
+        return jsonify({"message": "Erro ao obter projeto: " + str(e)}), 500
+
+
+
+@app.route('/invite_user_to_project', methods=['POST'])
+@token_required
+def invite_user_to_project(current_user_id):
+    data = request.json
+    email = data.get('email')
+    project_id = data.get('project_id')
+
+    if not email or not project_id:
+        return jsonify({"message": "Email e project_id são obrigatórios"}), 400
+
+    cursor = conn.cursor()
+    try:
+        # Verify user exists
+        cursor.execute("SELECT UniqueID FROM Users WHERE email = %s", (email,))
+        user = cursor.fetchone()
+        if not user:
+            return jsonify({"message": "Usuário com este email não encontrado"}), 404
+        user_id = user[0]
+
+        # Insert into UserProjects
+        cursor.execute("""
+            INSERT IGNORE INTO UserProjects (user_id, project_id, role)
+            VALUES (%s, %s, %s)
+        """, (user_id, project_id, 'collaborator'))
+        conn.commit()
+        return jsonify({"message": "Usuário adicionado ao projeto com sucesso!"}), 200
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"message": "Erro ao adicionar usuário: " + str(e)}), 500
+    finally:
+        cursor.close()
+
+
+
+@app.route('/get_project_collaborators', methods=['GET'])
+@token_required
+def get_project_collaborators(current_user_id):
+    project_id = request.args.get('project_id')
+
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            SELECT u.UniqueID, u.nome, u.email, up.role
+            FROM UserProjects up
+            JOIN Users u ON up.user_id = u.UniqueID
+            WHERE up.project_id = %s
+        """, (project_id,))
+        collaborators = cursor.fetchall()
+        cursor.close()
+
+        return jsonify([
+            {
+                "user_id": row[0],
+                "name": row[1],
+                "email": row[2],
+                "role": row[3]
+            } for row in collaborators
+        ]), 200
+    except Exception as e:
+        cursor.close()
+        return jsonify({"message": "Erro ao buscar colaboradores: " + str(e)}), 500
 
 
 
