@@ -387,30 +387,46 @@ def removeproject():
 
 @app.route('/editarproject', methods=['POST'])
 @token_required
-def editarproject():
-    # Recebe o JSON com os dados do projeto a ser editado
+def editarproject(current_user_id):
     project_data = request.json
+
+    # Safely get fields
     unique_id = project_data.get('UniqueID')
     novo_nome = project_data.get('nome')
-    nova_data_ini = datetime.strptime(project_data.get('data_ini'), '%Y-%m-%d').date()
     nova_descricao = project_data.get('descricao')
+    data_ini_str = project_data.get('data_ini')
 
-    # Atualiza os dados do projeto na tabela Projects
+    # Validate required fields
+    if not all([unique_id, novo_nome, nova_descricao, data_ini_str]):
+        return jsonify({"message": "Todos os campos (UniqueID, nome, descricao, data_ini) são obrigatórios."}), 400
+
+    # Validate and parse date
+    try:
+        nova_data_ini = datetime.strptime(data_ini_str, '%Y-%m-%d').date()
+    except Exception as e:
+        return jsonify({"message": f"Formato de data inválido: {str(e)}"}), 400
+
+    # Execute update
     cursor = conn.cursor()
     try:
-        cursor.execute("UPDATE Projects SET nome = %s, data_ini = %s, descricao = %s WHERE UniqueID = %s", 
-                       (novo_nome, nova_data_ini, nova_descricao, unique_id))
+        cursor.execute("""
+            UPDATE Projects 
+            SET nome = %s, data_ini = %s, descricao = %s 
+            WHERE UniqueID = %s
+        """, (novo_nome, nova_data_ini, nova_descricao, unique_id))
         conn.commit()
+
         if cursor.rowcount > 0:
-            cursor.close()
             return jsonify({"message": "Projeto atualizado com sucesso!"}), 200
         else:
-            cursor.close()
             return jsonify({"message": "Nenhum projeto encontrado com o ID fornecido"}), 404
+
     except Exception as e:
         conn.rollback()
+        return jsonify({"message": f"Erro ao atualizar projeto: {str(e)}"}), 500
+    finally:
         cursor.close()
-        return jsonify({"message": "Erro ao atualizar projeto: " + str(e)}), 500
+
     
 
 @app.route('/removeruser', methods=['POST'])
