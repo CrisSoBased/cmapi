@@ -239,7 +239,7 @@ def newproject(current_user_id):
 
 @app.route('/userprojects', methods=['GET'])
 @token_required
-def get_user_projects(current_user):
+def get_user_projects(current_user_id):  # already an int!
     cursor = conn.cursor()
     try:
         cursor.execute("""
@@ -247,7 +247,7 @@ def get_user_projects(current_user):
             FROM Projects p
             JOIN UserProjects up ON p.UniqueID = up.project_id
             WHERE up.user_id = %s
-        """, (current_user[0],))  # <-- Make sure you're using current_user[0] here
+        """, (current_user_id,))
         results = cursor.fetchall()
         projects = [{"id": row[0], "name": row[1]} for row in results]
         return jsonify(projects), 200
@@ -255,6 +255,7 @@ def get_user_projects(current_user):
         return jsonify({"error": str(e)}), 500
     finally:
         cursor.close()
+
 
 
 
