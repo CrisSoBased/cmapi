@@ -532,16 +532,20 @@ def associargestorprojeto():
     
 @app.route('/newtarefa', methods=['POST'])
 @token_required
-def newtarefa():
-    # Recebe o JSON com os dados da nova tarefa
+def newtarefa(current_user_id):
     data = request.json
     nome = data.get('nome')
     id_projeto = data.get('id_projeto')
 
-    # Insere a nova tarefa na tabela Tasks
+    if not nome or not id_projeto:
+        return jsonify({"message": "Campos 'nome' e 'id_projeto' são obrigatórios."}), 400
+
     cursor = conn.cursor()
     try:
-        cursor.execute("INSERT INTO Tasks (nome, id_projeto) VALUES (%s, %s)", (nome, id_projeto))
+        cursor.execute(
+            "INSERT INTO Tasks (nome, id_projeto) VALUES (%s, %s)",
+            (nome, id_projeto)
+        )
         conn.commit()
         cursor.close()
         return jsonify({"message": "Nova tarefa inserida com sucesso!"}), 200
@@ -549,6 +553,7 @@ def newtarefa():
         conn.rollback()
         cursor.close()
         return jsonify({"message": "Erro ao inserir nova tarefa: " + str(e)}), 500
+
 
 
 @app.route('/associarutilizadortarefa', methods=['POST'])
