@@ -582,25 +582,36 @@ def associarutilizadortarefa():
 def gettarefasprojeto():
     try:
         data = request.json
-        app.logger.info("Received data: %s", data)
+        print("==> Raw request body:", data)
 
         id_projeto = data.get("id_projeto")
         if not id_projeto:
+            print("==> id_projeto is missing or None")
             return jsonify({"error": "Missing id_projeto"}), 400
 
         cursor = conn.cursor()
-        cursor.execute("SELECT UniqueID, nome, concluir FROM Tasks WHERE id_projeto = %s", (id_projeto,))
+        query = "SELECT UniqueID, nome, concluir FROM Tasks WHERE id_projeto = %s"
+        print("==> Executing:", query, "with:", id_projeto)
+        cursor.execute(query, (id_projeto,))
         tarefas = cursor.fetchall()
         cursor.close()
 
-        return jsonify([
-            {"UniqueID": t[0], "nome": t[1], "concluir": bool(t[2])}
-            for t in tarefas
-        ]), 200
+        tarefas_info = [
+            {
+                "UniqueID": tarefa[0],
+                "nome": tarefa[1],
+                "concluir": tarefa[2]
+            }
+            for tarefa in tarefas
+        ]
+
+        print("==> Returning tasks:", tarefas_info)
+        return jsonify(tarefas_info), 200
 
     except Exception as e:
-        app.logger.error("Error fetching tasks: %s", str(e))
+        print("🔥 ERROR in /gettarefasprojeto:", str(e))
         return jsonify({"error": str(e)}), 500
+
 
 
 
