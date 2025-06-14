@@ -580,37 +580,28 @@ def associarutilizadortarefa():
 @app.route('/gettarefasprojeto', methods=['POST'])
 @token_required
 def gettarefasprojeto():
-    print("📥 Received request to /gettarefasprojeto")
     try:
         data = request.json
-        print("🔍 JSON Payload:", data)
+        app.logger.info("Received data: %s", data)
 
-        id_projeto = data.get('id_projeto')
-        print("📌 id_projeto:", id_projeto)
-
+        id_projeto = data.get("id_projeto")
         if not id_projeto:
-            return jsonify({"error": "Missing project ID"}), 400
+            return jsonify({"error": "Missing id_projeto"}), 400
 
         cursor = conn.cursor()
-        print("✅ Cursor created")
-
         cursor.execute("SELECT UniqueID, nome, concluir FROM Tasks WHERE id_projeto = %s", (id_projeto,))
         tarefas = cursor.fetchall()
         cursor.close()
-        print("📋 Fetched tasks:", tarefas)
 
-        tarefas_info = [
-            {"UniqueID": t[0], "nome": t[1], "concluir": t[2]}
+        return jsonify([
+            {"UniqueID": t[0], "nome": t[1], "concluir": bool(t[2])}
             for t in tarefas
-        ]
-
-        return jsonify(tarefas_info), 200
+        ]), 200
 
     except Exception as e:
-        import traceback
-        print("❌ Error in /gettarefasprojeto:", e)
-        traceback.print_exc()
-        return jsonify({"error": "Internal server error", "details": str(e)}), 500
+        app.logger.error("Error fetching tasks: %s", str(e))
+        return jsonify({"error": str(e)}), 500
+
 
 
 
