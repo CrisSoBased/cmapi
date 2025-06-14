@@ -987,3 +987,41 @@ def debug_tasks_for_project(project_id):
         cursor.close()
 
 
+@app.route('/debug/tables')
+def list_tables():
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SHOW TABLES")
+        tables = cursor.fetchall()
+        return jsonify([t[0] for t in tables])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+
+
+@app.route('/debug/describe')
+def describe_table():
+    table = request.args.get("table")
+    if not table:
+        return jsonify({"error": "Missing 'table' query parameter"}), 400
+
+    cursor = conn.cursor()
+    try:
+        cursor.execute(f"DESCRIBE `{table}`")  # safe only if table name is trusted
+        columns = cursor.fetchall()
+        return jsonify([
+            {
+                "Field": col[0],
+                "Type": col[1],
+                "Null": col[2],
+                "Key": col[3],
+                "Default": col[4],
+                "Extra": col[5]
+            }
+            for col in columns
+        ])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
