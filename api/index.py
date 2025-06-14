@@ -968,3 +968,23 @@ def debug_userprojects():
     finally:
         cursor.close()
 
+@app.route('/debug/tasks-for-project/<int:project_id>')
+def debug_tasks_for_project(project_id):
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT UniqueID, nome, concluir FROM Tasks WHERE id_projeto = %s", (project_id,))
+        tarefas = cursor.fetchall()
+        result = []
+        for tarefa in tarefas:
+            result.append({
+                "UniqueID": tarefa[0],
+                "nome": tarefa[1],
+                "concluir": tarefa[2]
+            })
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+
+
