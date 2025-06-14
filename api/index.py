@@ -584,7 +584,7 @@ def gettarefasprojeto():
         data = request.json
         id_projeto = data.get('id_projeto')
 
-        if not id_projeto:
+        if id_projeto is None:
             return jsonify({"message": "id_projeto is missing"}), 400
 
         cursor = conn.cursor()
@@ -593,15 +593,18 @@ def gettarefasprojeto():
         cursor.close()
 
         tarefas_info = [
-            {"UniqueID": t[0], "nome": t[1], "concluir": t[2]} for t in tarefas
+            {"UniqueID": t[0], "nome": t[1], "concluir": t[2]}
+            for t in tarefas
         ]
 
         return jsonify(tarefas_info), 200
 
     except Exception as e:
         import traceback
+        print("Error in /gettarefasprojeto:", e)
         traceback.print_exc()
-        return jsonify({"message": f"Erro interno: {str(e)}"}), 500
+        return jsonify({"message": "Server error", "error": str(e)}), 500
+
 
     
 
