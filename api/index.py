@@ -655,7 +655,11 @@ def gettarefasprojeto(current_user_id):
             tarefa_info = {
                 "UniqueID": tarefa[0],
                 "nome": tarefa[1],
-                "concluir": tarefa[2]
+                "concluir": tarefa[2],
+                "data_ini": tarefa[3],
+                "local": tarefa[4],
+                "tempo": tarefa[5],
+                "observacoes": tarefa[6]
             }
             tarefas_info.append(tarefa_info)
 
