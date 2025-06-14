@@ -646,7 +646,7 @@ def gettarefasprojeto(current_user_id):
             return jsonify({"error": "Missing id_projeto in request"}), 400
 
         cursor = conn.cursor()
-        cursor.execute("SELECT UniqueID, nome, concluir FROM Tasks WHERE id_projeto = %s", (id_projeto,))
+        cursor.execute("SELECT UniqueID, nome, concluir, data_ini, local, tempo, observacoes FROM Tasks WHERE id_projeto = %s", (id_projeto,))
         tarefas = cursor.fetchall()
         cursor.close()
 
