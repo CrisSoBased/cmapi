@@ -582,31 +582,32 @@ def associarutilizadortarefa():
 def gettarefasprojeto():
     try:
         data = request.json
-        print("👉 Raw data:", data)
+        print("DEBUG - Incoming JSON:", data)
 
-        id_projeto = data.get("id_projeto")
-        if not id_projeto:
-            print("❌ id_projeto not found in request")
-            return jsonify({"error": "Missing id_projeto"}), 400
+        id_projeto = data.get('id_projeto')
+        if id_projeto is None:
+            return jsonify({"error": "Missing id_projeto in request"}), 400
 
-        print(f"🔍 Fetching tasks for project ID: {id_projeto}")
         cursor = conn.cursor()
         cursor.execute("SELECT UniqueID, nome, concluir FROM Tasks WHERE id_projeto = %s", (id_projeto,))
         tarefas = cursor.fetchall()
         cursor.close()
 
-        tarefas_info = [{
-            "UniqueID": t[0],
-            "nome": t[1],
-            "concluir": t[2]
-        } for t in tarefas]
+        tarefas_info = []
+        for tarefa in tarefas:
+            tarefa_info = {
+                "UniqueID": tarefa[0],
+                "nome": tarefa[1],
+                "concluir": tarefa[2]
+            }
+            tarefas_info.append(tarefa_info)
 
-        print("✅ Returning tasks:", tarefas_info)
         return jsonify(tarefas_info), 200
 
     except Exception as e:
-        print("🔥 ERROR:", str(e))
-        return jsonify({"error": str(e)}), 500
+        print("ERROR in gettarefasprojeto:", str(e))
+        return jsonify({"message": "Erro ao obter tarefas do projeto: " + str(e)}), 500
+
 
 
 
