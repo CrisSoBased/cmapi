@@ -666,27 +666,47 @@ def gettarefasprojeto(current_user_id):
             return jsonify({"error": "Missing id_projeto in request"}), 400
 
         cursor = conn.cursor()
-        cursor.execute("SELECT UniqueID, nome, concluir, data_ini, local, tempo, observacoes FROM Tasks WHERE id_projeto = %s", (id_projeto,))
+
+        # Check if current user is the owner
+        cursor.execute("""
+            SELECT role FROM UserProjects 
+            WHERE user_id = %s AND project_id = %s
+        """, (current_user_id, id_projeto))
+        role_row = cursor.fetchone()
+
+        if role_row and role_row[0] == 'owner':
+            # Owner sees all tasks
+            cursor.execute("""
+                SELECT UniqueID, nome, concluir, data_ini, local, tempo, observacoes 
+                FROM Tasks WHERE id_projeto = %s
+            """, (id_projeto,))
+        else:
+            # Collaborators only see their assigned tasks
+            cursor.execute("""
+                SELECT t.UniqueID, t.nome, t.concluir, t.data_ini, t.local, t.tempo, t.observacoes
+                FROM Tasks t
+                JOIN TaskAssignments ta ON ta.task_id = t.UniqueID
+                WHERE t.id_projeto = %s AND ta.user_id = %s
+            """, (id_projeto, current_user_id))
+
         tarefas = cursor.fetchall()
         cursor.close()
 
-        tarefas_info = []
-        for tarefa in tarefas:
-            tarefa_info = {
-                "UniqueID": tarefa[0],
-                "nome": tarefa[1],
-                "concluir": tarefa[2],
-                "data_ini": tarefa[3],
-                "local": tarefa[4],
-                "tempo": tarefa[5],
-                "observacoes": tarefa[6]
-            }
-            tarefas_info.append(tarefa_info)
+        tarefas_info = [{
+            "UniqueID": row[0],
+            "nome": row[1],
+            "concluir": row[2],
+            "data_ini": row[3],
+            "local": row[4],
+            "tempo": row[5],
+            "observacoes": row[6]
+        } for row in tarefas]
 
-        return jsonify(tarefas_info), 200  # ✅ Return array only
+        return jsonify(tarefas_info), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 
 
