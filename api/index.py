@@ -673,7 +673,8 @@ def gettarefasprojeto(current_user_id):
 
     except Exception as e:
         debug_info["exception"] = str(e)
-        return jsonify(tarefas_info), 200
+        return jsonify({"tarefas": tarefas_info, "debug": debug_info}), 200
+
 
 
 
