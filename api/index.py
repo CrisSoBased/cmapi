@@ -691,6 +691,24 @@ def gettarefasprojeto(current_user_id):
 
 
 
+@app.route('/allprojects', methods=['GET'])
+@token_required
+def get_all_user_projects(current_user_id):
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            SELECT p.UniqueID, p.nome
+            FROM Projects p
+            JOIN UserProjects up ON p.UniqueID = up.project_id
+            WHERE up.user_id = %s
+        """, (current_user_id,))
+        results = cursor.fetchall()
+        projects = [{"id": row[0], "name": row[1]} for row in results]
+        return jsonify(projects), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
 
 
 
