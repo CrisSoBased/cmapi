@@ -580,31 +580,29 @@ def associarutilizadortarefa():
 @app.route('/gettarefasprojeto', methods=['POST'])
 @token_required
 def gettarefasprojeto():
-    # Recebe o JSON com o ID do projeto
-    data = request.json
-    id_projeto = data.get('id_projeto')
-
-    # Seleciona as tarefas do projeto especificado
-    cursor = conn.cursor()
     try:
+        data = request.json
+        id_projeto = data.get('id_projeto')
+
+        if not id_projeto:
+            return jsonify({"message": "id_projeto is missing"}), 400
+
+        cursor = conn.cursor()
         cursor.execute("SELECT UniqueID, nome, concluir FROM Tasks WHERE id_projeto = %s", (id_projeto,))
         tarefas = cursor.fetchall()
         cursor.close()
 
-        # Prepara os resultados para retorno
-        tarefas_info = []
-        for tarefa in tarefas:
-            tarefa_info = {
-                "UniqueID": tarefa[0],
-                "nome": tarefa[1],
-                "concluir": tarefa[2]
-            }
-            tarefas_info.append(tarefa_info)
+        tarefas_info = [
+            {"UniqueID": t[0], "nome": t[1], "concluir": t[2]} for t in tarefas
+        ]
 
-        return jsonify({"tarefas": tarefas_info}), 200
+        return jsonify(tarefas_info), 200
+
     except Exception as e:
-        cursor.close()
-        return jsonify({"message": "Erro ao obter tarefas do projeto: " + str(e)}), 500
+        import traceback
+        traceback.print_exc()
+        return jsonify({"message": f"Erro interno: {str(e)}"}), 500
+
     
 
 @app.route('/updutlizadoresprojeto', methods=['POST'])
