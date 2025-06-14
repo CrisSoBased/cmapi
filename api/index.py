@@ -645,12 +645,17 @@ def gettarefasprojeto():
 
         id_projeto = data.get('id_projeto')
         if id_projeto is None:
+            print("ERROR - id_projeto missing in request")
             return jsonify({"error": "Missing id_projeto in request"}), 400
+
+        print("DEBUG - id_projeto received:", id_projeto)
 
         cursor = conn.cursor()
         cursor.execute("SELECT UniqueID, nome, concluir FROM Tasks WHERE id_projeto = %s", (id_projeto,))
         tarefas = cursor.fetchall()
         cursor.close()
+
+        print("DEBUG - tarefas fetched:", tarefas)
 
         tarefas_info = []
         for tarefa in tarefas:
@@ -661,12 +666,13 @@ def gettarefasprojeto():
             }
             tarefas_info.append(tarefa_info)
 
+        print("DEBUG - Returning tarefas_info:", tarefas_info)
         return jsonify(tarefas_info), 200
 
     except Exception as e:
         print("ERROR in gettarefasprojeto:", str(e))
-        traceback.print_exc()  # 👈 Add this line
         return jsonify({"message": "Erro ao obter tarefas do projeto: " + str(e)}), 500
+
 
 
 
