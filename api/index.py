@@ -562,32 +562,39 @@ def newtarefa(current_user_id):
 def editartarefa(current_user_id):
     data = request.json
     task_id = data.get('UniqueID')
-    novo_nome = data.get('nome')
-    concluir = data.get('concluir')  # optional
+    nome = data.get('nome')
+    concluir = data.get('concluir')
+    data_ini = data.get('data_ini')
+    local = data.get('local')
+    tempo = data.get('tempo')
+    observacoes = data.get('observacoes')
 
-    if not task_id or novo_nome is None:
+    if not task_id or nome is None:
         return jsonify({"message": "Campos 'UniqueID' e 'nome' são obrigatórios."}), 400
 
     cursor = conn.cursor()
     try:
-        query = "UPDATE Tasks SET nome = %s"
-        values = [novo_nome]
+        query = """
+            UPDATE Tasks SET 
+                nome = %s,
+                concluir = %s,
+                data_ini = %s,
+                local = %s,
+                tempo = %s,
+                observacoes = %s
+            WHERE UniqueID = %s
+        """
+        values = (nome, concluir, data_ini, local, tempo, observacoes, task_id)
 
-        if concluir is not None:
-            query += ", concluir = %s"
-            values.append(concluir)
-
-        query += " WHERE UniqueID = %s"
-        values.append(task_id)
-
-        cursor.execute(query, tuple(values))
+        cursor.execute(query, values)
         conn.commit()
         return jsonify({"message": "Tarefa atualizada com sucesso!"}), 200
     except Exception as e:
         conn.rollback()
-        return jsonify({"message": "Erro ao editar tarefa: " + str(e)}), 500
+        return jsonify({"message": f"Erro ao editar tarefa: {str(e)}"}), 500
     finally:
         cursor.close()
+
 
 
 
