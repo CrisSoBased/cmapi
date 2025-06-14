@@ -638,24 +638,25 @@ def associarutilizadortarefa():
 
 @app.route('/gettarefasprojeto', methods=['POST'])
 @token_required
-def gettarefasprojeto():
+def gettarefasprojeto(current_user_id):
+    debug_info = {}
+
     try:
         data = request.json
-        print("DEBUG - Incoming JSON:", data)
+        debug_info["incoming_json"] = data
 
         id_projeto = data.get('id_projeto')
         if id_projeto is None:
-            print("ERROR - id_projeto missing in request")
-            return jsonify({"error": "Missing id_projeto in request"}), 400
+            debug_info["error"] = "Missing id_projeto"
+            return jsonify({"error": "Missing id_projeto in request", "debug": debug_info}), 400
 
-        print("DEBUG - id_projeto received:", id_projeto)
+        debug_info["id_projeto"] = id_projeto
 
         cursor = conn.cursor()
         cursor.execute("SELECT UniqueID, nome, concluir FROM Tasks WHERE id_projeto = %s", (id_projeto,))
         tarefas = cursor.fetchall()
+        debug_info["raw_tarefas"] = tarefas
         cursor.close()
-
-        print("DEBUG - tarefas fetched:", tarefas)
 
         tarefas_info = []
         for tarefa in tarefas:
@@ -666,12 +667,17 @@ def gettarefasprojeto():
             }
             tarefas_info.append(tarefa_info)
 
-        print("DEBUG - Returning tarefas_info:", tarefas_info)
-        return jsonify(tarefas_info), 200
+        debug_info["parsed_tarefas"] = tarefas_info
+
+        return jsonify({"tarefas": tarefas_info, "debug": debug_info}), 200
 
     except Exception as e:
-        print("ERROR in gettarefasprojeto:", str(e))
-        return jsonify({"message": "Erro ao obter tarefas do projeto: " + str(e)}), 500
+        debug_info["exception"] = str(e)
+        return jsonify({
+            "message": "Erro ao obter tarefas do projeto",
+            "debug": debug_info
+        }), 500
+
 
 
 
