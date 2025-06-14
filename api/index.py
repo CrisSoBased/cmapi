@@ -639,23 +639,15 @@ def associarutilizadortarefa():
 @app.route('/gettarefasprojeto', methods=['POST'])
 @token_required
 def gettarefasprojeto(current_user_id):
-    debug_info = {}
-
     try:
         data = request.json
-        debug_info["incoming_json"] = data
-
         id_projeto = data.get('id_projeto')
         if id_projeto is None:
-            debug_info["error"] = "Missing id_projeto"
-            return jsonify({"error": "Missing id_projeto in request", "debug": debug_info}), 400
-
-        debug_info["id_projeto"] = id_projeto
+            return jsonify({"error": "Missing id_projeto in request"}), 400
 
         cursor = conn.cursor()
         cursor.execute("SELECT UniqueID, nome, concluir FROM Tasks WHERE id_projeto = %s", (id_projeto,))
         tarefas = cursor.fetchall()
-        debug_info["raw_tarefas"] = tarefas
         cursor.close()
 
         tarefas_info = []
@@ -667,13 +659,11 @@ def gettarefasprojeto(current_user_id):
             }
             tarefas_info.append(tarefa_info)
 
-        debug_info["parsed_tarefas"] = tarefas_info
-
-        return jsonify({"tarefas": tarefas_info, "debug": debug_info}), 200
+        return jsonify(tarefas_info), 200  # ✅ Return array only
 
     except Exception as e:
-        debug_info["exception"] = str(e)
-        return jsonify({"tarefas": tarefas_info, "debug": debug_info}), 200
+        return jsonify({"error": str(e)}), 500
+
 
 
 
