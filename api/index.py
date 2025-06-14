@@ -553,6 +553,64 @@ def newtarefa(current_user_id):
         conn.rollback()
         cursor.close()
         return jsonify({"message": "Erro ao inserir nova tarefa: " + str(e)}), 500
+    
+
+
+@app.route('/editartarefa', methods=['POST'])
+@token_required
+def editartarefa(current_user_id):
+    data = request.json
+    task_id = data.get('UniqueID')
+    novo_nome = data.get('nome')
+    concluir = data.get('concluir')  # optional
+
+    if not task_id or novo_nome is None:
+        return jsonify({"message": "Campos 'UniqueID' e 'nome' são obrigatórios."}), 400
+
+    cursor = conn.cursor()
+    try:
+        query = "UPDATE Tasks SET nome = %s"
+        values = [novo_nome]
+
+        if concluir is not None:
+            query += ", concluir = %s"
+            values.append(concluir)
+
+        query += " WHERE UniqueID = %s"
+        values.append(task_id)
+
+        cursor.execute(query, tuple(values))
+        conn.commit()
+        return jsonify({"message": "Tarefa atualizada com sucesso!"}), 200
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"message": "Erro ao editar tarefa: " + str(e)}), 500
+    finally:
+        cursor.close()
+
+
+
+@app.route('/removertarefa', methods=['POST'])
+@token_required
+def removertarefa(current_user_id):
+    data = request.json
+    task_id = data.get('UniqueID')
+
+    if not task_id:
+        return jsonify({"message": "Campo 'UniqueID' é obrigatório."}), 400
+
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM Tasks WHERE UniqueID = %s", (task_id,))
+        conn.commit()
+        return jsonify({"message": "Tarefa removida com sucesso!"}), 200
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"message": "Erro ao remover tarefa: " + str(e)}), 500
+    finally:
+        cursor.close()
+
+
 
 
 
