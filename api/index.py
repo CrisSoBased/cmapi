@@ -5,6 +5,7 @@ import hashlib
 import random
 import string
 import jwt
+import traceback
 
 
 
@@ -664,6 +665,7 @@ def gettarefasprojeto():
 
     except Exception as e:
         print("ERROR in gettarefasprojeto:", str(e))
+        traceback.print_exc()  # 👈 Add this line
         return jsonify({"message": "Erro ao obter tarefas do projeto: " + str(e)}), 500
 
 
