@@ -624,23 +624,36 @@ def removertarefa(current_user_id):
 
 @app.route('/associarutilizadortarefa', methods=['POST'])
 @token_required
-def associarutilizadortarefa():
-    # Recebe o JSON com os IDs do utilizador e da tarefa
+def associarutilizadortarefa(current_user_id):
     data = request.json
     id_utilizador = data.get('id_utilizador')
     id_task = data.get('id_task')
 
-    # Insere a associação na tabela usertask
+    if not id_utilizador or not id_task:
+        return jsonify({"message": "id_utilizador e id_task são obrigatórios"}), 400
+
     cursor = conn.cursor()
     try:
-        cursor.execute("INSERT INTO usertask (id_utilizador, id_task) VALUES (%s, %s)", (id_utilizador, id_task))
+        # Optional: prevent duplicate association
+        cursor.execute("""
+            SELECT 1 FROM TaskAssignments WHERE user_id = %s AND task_id = %s
+        """, (id_utilizador, id_task))
+        if cursor.fetchone():
+            return jsonify({"message": "Esta associação já existe."}), 400
+
+        cursor.execute("""
+            INSERT INTO TaskAssignments (user_id, task_id)
+            VALUES (%s, %s)
+        """, (id_utilizador, id_task))
         conn.commit()
-        cursor.close()
-        return jsonify({"message": "Associação de utilizador e tarefa inserida com sucesso!"}), 200
+        return jsonify({"message": "Utilizador atribuído à tarefa com sucesso!"}), 200
+
     except Exception as e:
         conn.rollback()
+        return jsonify({"message": f"Erro ao associar utilizador à tarefa: {str(e)}"}), 500
+    finally:
         cursor.close()
-        return jsonify({"message": "Erro ao inserir associação de utilizador e tarefa: " + str(e)}), 500
+
 
 
 @app.route('/gettarefasprojeto', methods=['POST'])
