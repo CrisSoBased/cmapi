@@ -747,25 +747,29 @@ def get_owner_stats(current_user_id):
 
 @app.route('/adminstats', methods=['GET'])
 @token_required
-def get_admin_stats(current_user_id):
+def admin_stats(current_user_id):
     cursor = conn.cursor()
     try:
-        # Check if user is admin
+        # Ensure current user is an admin
         cursor.execute("SELECT tipo FROM Users WHERE UniqueID = %s", (current_user_id,))
         tipo = cursor.fetchone()
         if not tipo or str(tipo[0]) != "2":
             return jsonify({"message": "Unauthorized"}), 403
 
+        # Get total users
         cursor.execute("SELECT COUNT(*) FROM Users")
         total_users = cursor.fetchone()[0]
 
+        # Get total projects
         cursor.execute("SELECT COUNT(*) FROM Projects")
         total_projects = cursor.fetchone()[0]
 
-        cursor.execute("SELECT COUNT(*) FROM Tasks WHERE estado = 'completed'")
+        # Get completed tasks
+        cursor.execute("SELECT COUNT(*) FROM Tasks WHERE concluir = 1")
         completed_tasks = cursor.fetchone()[0]
 
-        cursor.execute("SELECT COUNT(*) FROM Tasks WHERE estado = 'pending'")
+        # Get pending tasks
+        cursor.execute("SELECT COUNT(*) FROM Tasks WHERE concluir = 0")
         pending_tasks = cursor.fetchone()[0]
 
         return jsonify({
@@ -776,10 +780,10 @@ def get_admin_stats(current_user_id):
         }), 200
 
     except Exception as e:
-        return jsonify({"error": f"Erro interno: {str(e)}"}), 500
-
+        return jsonify({"message": f"Erro ao obter estatísticas: {str(e)}"}), 500
     finally:
         cursor.close()
+
 
 
 
