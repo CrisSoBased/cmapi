@@ -142,7 +142,7 @@ def loginft():
         "user_id": unique_id,
         "nome": nome,
         "email": email,
-        "role": tipo
+        "role": "admin" if tipo == 2 else "user"
     }), 200
 
 
