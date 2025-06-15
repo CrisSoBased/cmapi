@@ -579,6 +579,54 @@ def admin_get_project(current_user_id):
     }), 200
 
 
+@app.route('/admin_editarproject', methods=['POST'])
+@token_required
+def admin_editar_project(current_user_id):
+    project_data = request.json
+
+    # Get data
+    unique_id = project_data.get('UniqueID')
+    novo_nome = project_data.get('nome')
+    nova_descricao = project_data.get('descricao')
+    data_ini_str = project_data.get('data_ini')
+
+    if not all([unique_id, novo_nome, nova_descricao, data_ini_str]):
+        return jsonify({"message": "Todos os campos são obrigatórios."}), 400
+
+    try:
+        nova_data_ini = datetime.strptime(data_ini_str, '%Y-%m-%d').date()
+    except Exception as e:
+        return jsonify({"message": f"Formato de data inválido: {str(e)}"}), 400
+
+    cursor = conn.cursor()
+
+    # ✅ Check if user is admin
+    cursor.execute("SELECT tipo FROM Users WHERE UniqueID = %s", (current_user_id,))
+    result = cursor.fetchone()
+    if not result or str(result[0]) != "2":
+        cursor.close()
+        return jsonify({"message": "Apenas administradores podem acessar este endpoint."}), 403
+
+    try:
+        cursor.execute("""
+            UPDATE Projects 
+            SET nome = %s, data_ini = %s, descricao = %s 
+            WHERE UniqueID = %s
+        """, (novo_nome, nova_data_ini, nova_descricao, unique_id))
+        conn.commit()
+
+        if cursor.rowcount > 0:
+            return jsonify({"message": "Projeto atualizado pelo admin!"}), 200
+        else:
+            return jsonify({"message": "Projeto não encontrado."}), 404
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"message": f"Erro ao atualizar projeto: {str(e)}"}), 500
+    finally:
+        cursor.close()
+
+
+
 
 
 
