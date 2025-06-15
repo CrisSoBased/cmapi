@@ -460,6 +460,81 @@ def remove_user_from_project(current_user_id):
     return jsonify({"message": "Usuário removido do projeto com sucesso"}), 200
 
 
+@app.route('/stats/overview', methods=['GET'])
+@token_required
+def stats_overview(current_user_id):
+    try:
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT COUNT(*) FROM Projects")
+        total_projects = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM Tasks")
+        total_tasks = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM Users")
+        total_users = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM Tasks WHERE concluido = 1")
+        completed_tasks = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM Tasks WHERE concluido = 0")
+        pending_tasks = cursor.fetchone()[0]
+
+        completion_rate = (
+            (completed_tasks / total_tasks) * 100 if total_tasks > 0 else 0
+        )
+
+        cursor.close()
+
+        return jsonify({
+            "total_projects": total_projects,
+            "total_tasks": total_tasks,
+            "total_users": total_users,
+            "completed_tasks": completed_tasks,
+            "pending_tasks": pending_tasks,
+            "completion_rate": round(completion_rate, 2)
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+
+@app.route('/admin/projects', methods=['GET'])
+@token_required
+def admin_get_all_projects(current_user_id):
+    # Check if the user is an admin
+    cursor = conn.cursor()
+    cursor.execute("SELECT role FROM Users WHERE UniqueID = %s", (current_user_id,))
+    row = cursor.fetchone()
+    if not row or row[0] != 'admin':
+        cursor.close()
+        return jsonify({"message": "Unauthorized"}), 403
+
+    # Fetch all projects
+    cursor.execute("""
+        SELECT UniqueID, nome, descricao, data_inicio
+        FROM Projects
+        ORDER BY data_inicio DESC
+    """)
+    projects = cursor.fetchall()
+    cursor.close()
+
+    # Return list as JSON
+    result = []
+    for p in projects:
+        result.append({
+            "project_id": p[0],
+            "name": p[1],
+            "description": p[2],
+            "start_date": p[3].strftime("%Y-%m-%d") if p[3] else None
+        })
+
+    return jsonify(result), 200
+
+
+
+
 @app.route('/add_admin_userproject', methods=['POST'])
 @token_required
 def add_admin_userproject(current_user_id):
