@@ -377,9 +377,9 @@ def get_owned_projects(current_user_id):
 
 
 
-@app.route('/removeruser', methods=['POST']) # PARA ADMIN APENAS
+@app.route('/deleteuser', methods=['POST']) # PARA ADMIN APENAS
 @token_required
-def removeruser(current_user_id):
+def deleteuser(current_user_id):
     data = request.json
     unique_id = data.get('UniqueID')
 
