@@ -500,18 +500,19 @@ def stats_overview(current_user_id):
         return jsonify({"error": str(e)}), 500
     
 
-@app.route('/admin/projects', methods=['GET'])
+@app.route('/adminallprojects', methods=['GET']) 
 @token_required
 def admin_get_all_projects(current_user_id):
-    # Check if the user is an admin
     cursor = conn.cursor()
-    cursor.execute("SELECT role FROM Users WHERE UniqueID = %s", (current_user_id,))
+    
+    # ✅ Check if user is an admin by tipo
+    cursor.execute("SELECT tipo FROM Users WHERE UniqueID = %s", (current_user_id,))
     row = cursor.fetchone()
-    if not row or row[0] != 'admin':
+    if not row or row[0] != 2:
         cursor.close()
         return jsonify({"message": "Unauthorized"}), 403
 
-    # Fetch all projects
+    # ✅ Fetch all projects
     cursor.execute("""
         SELECT UniqueID, nome, descricao, data_inicio
         FROM Projects
@@ -520,7 +521,7 @@ def admin_get_all_projects(current_user_id):
     projects = cursor.fetchall()
     cursor.close()
 
-    # Return list as JSON
+    # ✅ Format response
     result = []
     for p in projects:
         result.append({
@@ -531,6 +532,7 @@ def admin_get_all_projects(current_user_id):
         })
 
     return jsonify(result), 200
+
 
 
 
