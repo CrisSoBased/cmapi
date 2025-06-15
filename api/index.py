@@ -701,6 +701,84 @@ def admin_editar_project(current_user_id):
 
 
 
+@app.route('/collaboratorstats', methods=['GET'])
+@token_required
+def get_collaborator_stats(current_user_id):
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT 
+            COUNT(*) AS total,
+            SUM(CASE WHEN estado = 'completed' THEN 1 ELSE 0 END) AS completed,
+            SUM(CASE WHEN estado != 'completed' THEN 1 ELSE 0 END) AS pending
+        FROM Tasks
+        WHERE assigned_to = %s
+    """, (current_user_id,))
+    result = cursor.fetchone()
+    cursor.close()
+    return jsonify({
+        "total": result[0] or 0,
+        "completed": result[1] or 0,
+        "pending": result[2] or 0
+    })
+
+@app.route('/ownerstats', methods=['GET'])
+@token_required
+def get_owner_stats(current_user_id):
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM Projects WHERE owner_id = %s", (current_user_id,))
+    projects = cursor.fetchone()[0] or 0
+
+    cursor.execute("""
+        SELECT 
+            COUNT(*) AS total,
+            SUM(CASE WHEN estado = 'completed' THEN 1 ELSE 0 END) AS completed,
+            SUM(CASE WHEN estado != 'completed' THEN 1 ELSE 0 END) AS pending
+        FROM Tasks
+        WHERE project_id IN (SELECT project_id FROM Projects WHERE owner_id = %s)
+    """, (current_user_id,))
+    result = cursor.fetchone()
+    cursor.close()
+    return jsonify({
+        "projects": projects,
+        "totalTasks": result[0] or 0,
+        "completed": result[1] or 0,
+        "pending": result[2] or 0
+    })
+
+@app.route('/adminstats', methods=['GET'])
+@token_required
+def get_admin_stats(current_user_id):
+    cursor = conn.cursor()
+    cursor.execute("SELECT tipo FROM Users WHERE UniqueID = %s", (current_user_id,))
+    tipo = cursor.fetchone()
+    if not tipo or str(tipo[0]) != "2":
+        return jsonify({"message": "Unauthorized"}), 403
+
+    cursor.execute("SELECT COUNT(*) FROM Users")
+    users = cursor.fetchone()[0] or 0
+
+    cursor.execute("SELECT COUNT(*) FROM Projects")
+    projects = cursor.fetchone()[0] or 0
+
+    cursor.execute("""
+        SELECT 
+            COUNT(*) AS total,
+            SUM(CASE WHEN estado = 'completed' THEN 1 ELSE 0 END) AS completed,
+            SUM(CASE WHEN estado != 'completed' THEN 1 ELSE 0 END) AS pending
+        FROM Tasks
+    """)
+    result = cursor.fetchone()
+    cursor.close()
+    return jsonify({
+        "users": users,
+        "projects": projects,
+        "completed": result[1] or 0,
+        "pending": result[2] or 0
+    })
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
 
 
 
