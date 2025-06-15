@@ -745,25 +745,28 @@ def get_collaborator_stats(current_user_id):
 @token_required
 def get_owner_stats(current_user_id):
     cursor = conn.cursor()
-    cursor.execute("SELECT COUNT(*) FROM Projects WHERE owner_id = %s", (current_user_id,))
-    projects = cursor.fetchone()[0] or 0
 
     cursor.execute("""
-        SELECT 
-            COUNT(*) AS total,
-            SUM(CASE WHEN estado = 'completed' THEN 1 ELSE 0 END) AS completed,
-            SUM(CASE WHEN estado != 'completed' THEN 1 ELSE 0 END) AS pending
-        FROM Tasks
-        WHERE project_id IN (SELECT project_id FROM Projects WHERE owner_id = %s)
+        SELECT p.nome, 
+               SUM(CASE WHEN t.estado = 'completed' THEN 1 ELSE 0 END) AS completed,
+               SUM(CASE WHEN t.estado != 'completed' THEN 1 ELSE 0 END) AS pending
+        FROM Projects p
+        LEFT JOIN Tasks t ON p.UniqueID = t.id_projeto
+        WHERE p.owner_id = %s
+        GROUP BY p.nome
     """, (current_user_id,))
-    result = cursor.fetchone()
+
+    results = cursor.fetchall()
     cursor.close()
-    return jsonify({
-        "projects": projects,
-        "totalTasks": result[0] or 0,
-        "completed": result[1] or 0,
-        "pending": result[2] or 0
-    })
+
+    projects = [{
+        "name": row[0],
+        "completed": row[1] or 0,
+        "pending": row[2] or 0
+    } for row in results]
+
+    return jsonify(projects), 200
+
 
 @app.route('/adminstats', methods=['GET'])
 @token_required
