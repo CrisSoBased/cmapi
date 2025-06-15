@@ -267,26 +267,13 @@ def get_project(current_user_id):
 
     cursor = conn.cursor()
     try:
-        # Check if the user is an admin
-        cursor.execute("SELECT tipo FROM Users WHERE UniqueID = %s", (current_user_id,))
-        tipo_result = cursor.fetchone()
-        is_admin = tipo_result and str(tipo_result[0]) == "2"
-
-        if is_admin:
-            # ✅ Admin can access any project directly
-            cursor.execute("""
-                SELECT UniqueID, nome, descricao, data_ini
-                FROM Projects
-                WHERE UniqueID = %s
-            """, (project_id,))
-        else:
-            # ✅ Normal users must be linked via UserProjects
-            cursor.execute("""
-                SELECT p.UniqueID, p.nome, p.descricao, p.data_ini
-                FROM Projects p
-                JOIN UserProjects up ON p.UniqueID = up.project_id
-                WHERE up.user_id = %s AND p.UniqueID = %s
-            """, (current_user_id, project_id))
+        # Must be a collaborator
+        cursor.execute("""
+            SELECT p.UniqueID, p.nome, p.descricao, p.data_ini
+            FROM Projects p
+            JOIN UserProjects up ON p.UniqueID = up.project_id
+            WHERE up.user_id = %s AND p.UniqueID = %s
+        """, (current_user_id, project_id))
 
         row = cursor.fetchone()
 
@@ -301,9 +288,10 @@ def get_project(current_user_id):
         }), 200
 
     except Exception as e:
-        return jsonify({"message": "Erro ao obter projeto: " + str(e)}), 500
+        return jsonify({"message": f"Erro ao obter projeto: {str(e)}"}), 500
     finally:
         cursor.close()
+
 
 
 
