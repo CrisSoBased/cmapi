@@ -704,22 +704,42 @@ def admin_editar_project(current_user_id):
 @app.route('/collaboratorstats', methods=['GET'])
 @token_required
 def get_collaborator_stats(current_user_id):
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT 
-            COUNT(*) AS total,
-            SUM(CASE WHEN estado = 'completed' THEN 1 ELSE 0 END) AS completed,
-            SUM(CASE WHEN estado != 'completed' THEN 1 ELSE 0 END) AS pending
-        FROM Tasks
-        WHERE assigned_to = %s
-    """, (current_user_id,))
-    result = cursor.fetchone()
-    cursor.close()
-    return jsonify({
-        "total": result[0] or 0,
-        "completed": result[1] or 0,
-        "pending": result[2] or 0
-    })
+    user_id = request.args.get('user_id', type=int)
+
+    try:
+        cursor = conn.cursor()
+
+        # Check if the user exists
+        cursor.execute("SELECT COUNT(*) FROM Users WHERE UniqueID = %s", (user_id,))
+        if cursor.fetchone()[0] == 0:
+            return jsonify({"message": "User not found"}), 404
+
+        # Safe stats query logic here...
+        cursor.execute("""
+            SELECT COUNT(*),
+                   SUM(CASE WHEN concluir = 1 THEN 1 ELSE 0 END),
+                   SUM(CASE WHEN concluir = 0 THEN 1 ELSE 0 END)
+            FROM Tasks
+            WHERE id_projeto IN (
+                SELECT id_projeto
+                FROM UserProjects
+                WHERE user_id = %s
+            )
+        """, (user_id,))
+
+        row = cursor.fetchone()
+        return jsonify({
+            "total": row[0] or 0,
+            "completed": row[1] or 0,
+            "pending": row[2] or 0
+        }), 200
+
+    except Exception as e:
+        print("💥 Error in /collaboratorstats:", e)
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+
 
 @app.route('/ownerstats', methods=['GET'])
 @token_required
