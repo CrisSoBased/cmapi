@@ -749,35 +749,38 @@ def get_owner_stats(current_user_id):
 @token_required
 def get_admin_stats(current_user_id):
     cursor = conn.cursor()
-    cursor.execute("SELECT tipo FROM Users WHERE UniqueID = %s", (current_user_id,))
-    tipo = cursor.fetchone()
-    if not tipo or str(tipo[0]) != "2":
-        return jsonify({"message": "Unauthorized"}), 403
+    try:
+        # Check if user is admin
+        cursor.execute("SELECT tipo FROM Users WHERE UniqueID = %s", (current_user_id,))
+        tipo = cursor.fetchone()
+        if not tipo or str(tipo[0]) != "2":
+            return jsonify({"message": "Unauthorized"}), 403
 
-    cursor.execute("SELECT COUNT(*) FROM Users")
-    users = cursor.fetchone()[0] or 0
+        cursor.execute("SELECT COUNT(*) FROM Users")
+        total_users = cursor.fetchone()[0]
 
-    cursor.execute("SELECT COUNT(*) FROM Projects")
-    projects = cursor.fetchone()[0] or 0
+        cursor.execute("SELECT COUNT(*) FROM Projects")
+        total_projects = cursor.fetchone()[0]
 
-    cursor.execute("""
-        SELECT 
-            COUNT(*) AS total,
-            SUM(CASE WHEN estado = 'completed' THEN 1 ELSE 0 END) AS completed,
-            SUM(CASE WHEN estado != 'completed' THEN 1 ELSE 0 END) AS pending
-        FROM Tasks
-    """)
-    result = cursor.fetchone()
-    cursor.close()
-    return jsonify({
-        "users": users,
-        "projects": projects,
-        "completed": result[1] or 0,
-        "pending": result[2] or 0
-    })
+        cursor.execute("SELECT COUNT(*) FROM Tasks WHERE estado = 'completed'")
+        completed_tasks = cursor.fetchone()[0]
 
-if __name__ == '__main__':
-    app.run(debug=True)
+        cursor.execute("SELECT COUNT(*) FROM Tasks WHERE estado = 'pending'")
+        pending_tasks = cursor.fetchone()[0]
+
+        return jsonify({
+            "total_users": total_users,
+            "total_projects": total_projects,
+            "completed_tasks": completed_tasks,
+            "pending_tasks": pending_tasks
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": f"Erro interno: {str(e)}"}), 500
+
+    finally:
+        cursor.close()
+
 
 
 
