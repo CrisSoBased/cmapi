@@ -768,6 +768,34 @@ def get_owner_stats(current_user_id):
     return jsonify(projects), 200
 
 
+@app.route('/ownerprojectstats', methods=['GET'])
+@token_required
+def get_owner_project_stats(current_user_id):
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            SELECT p.nome, 
+                   SUM(CASE WHEN t.estado = 'completed' THEN 1 ELSE 0 END) AS completed,
+                   SUM(CASE WHEN t.estado != 'completed' THEN 1 ELSE 0 END) AS pending
+            FROM Projects p
+            LEFT JOIN Tasks t ON p.UniqueID = t.id_projeto
+            WHERE p.owner_id = %s
+            GROUP BY p.nome
+        """, (current_user_id,))
+        results = cursor.fetchall()
+        projects = [{
+            "name": row[0],
+            "completed": row[1] or 0,
+            "pending": row[2] or 0
+        } for row in results]
+        return jsonify(projects), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+
+
+
 @app.route('/adminstats', methods=['GET'])
 @token_required
 def admin_stats(current_user_id):
