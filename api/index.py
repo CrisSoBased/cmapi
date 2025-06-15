@@ -374,6 +374,47 @@ def get_owned_projects(current_user_id):
     finally:
         cursor.close()
 
+@app.route('/removeuserfromtask', methods=['POST'])
+@token_required
+def remove_user_from_task(current_user_id):
+    data = request.json
+    id_task = data.get('id_task')
+    id_utilizador = data.get('id_utilizador')
+
+    if not id_task or not id_utilizador:
+        return jsonify({"message": "id_task e id_utilizador são obrigatórios"}), 400
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM TaskAssignments WHERE user_id = %s AND task_id = %s", (id_utilizador, id_task))
+        conn.commit()
+        cursor.close()
+        return jsonify({"message": "Utilizador removido da tarefa com sucesso!"}), 200
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"message": "Erro ao remover utilizador da tarefa: " + str(e)}), 500
+
+
+@app.route('/removeuserfromproject', methods=['POST'])
+@token_required
+def remove_user_from_project(current_user_id):
+    data = request.json
+    project_id = data.get('project_id')
+    id_utilizador = data.get('id_utilizador')
+
+    if not project_id or not id_utilizador:
+        return jsonify({"message": "project_id e id_utilizador são obrigatórios"}), 400
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM UserProjects WHERE user_id = %s AND project_id = %s", (id_utilizador, project_id))
+        conn.commit()
+        cursor.close()
+        return jsonify({"message": "Utilizador removido do projeto com sucesso!"}), 200
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"message": "Erro ao remover utilizador do projeto: " + str(e)}), 500
+
 
 
 
