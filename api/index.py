@@ -587,6 +587,37 @@ def admin_get_project(current_user_id):
     }), 200
 
 
+
+@app.route('/users', methods=['GET'])
+@token_required
+def list_users(current_user_id):
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT tipo FROM Users WHERE UniqueID = %s", (current_user_id,))
+        tipo = cursor.fetchone()
+        if not tipo or str(tipo[0]) != "2":
+            return jsonify({"message": "Unauthorized"}), 403
+
+        cursor.execute("""
+            SELECT UniqueID, nome, email, tipo
+            FROM Users
+        """)
+        rows = cursor.fetchall()
+        users = [{
+            "id": row[0],
+            "name": row[1],
+            "email": row[2],
+            "role": row[3]
+        } for row in rows]
+
+        return jsonify(users), 200
+    except Exception as e:
+        return jsonify({"message": "Erro ao listar usuários: " + str(e)}), 500
+    finally:
+        cursor.close()
+
+
+
 @app.route('/admin_editarproject', methods=['POST'])
 @token_required
 def admin_editar_project(current_user_id):
