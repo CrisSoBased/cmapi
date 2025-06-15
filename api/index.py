@@ -377,6 +377,40 @@ def get_owned_projects(current_user_id):
 
 
 
+@app.route('/removeruser', methods=['POST']) # PARA ADMIN APENAS
+@token_required
+def removeruser(current_user_id):
+    data = request.json
+    unique_id = data.get('UniqueID')
+
+    if not unique_id:
+        return jsonify({"message": "Campo 'UniqueID' é obrigatório."}), 400
+
+    cursor = conn.cursor()
+    try:
+        # 🔍 1. Check for owned projects
+        cursor.execute("""
+            SELECT project_id FROM UserProjects
+            WHERE user_id = %s AND role = 'owner'
+        """, (unique_id,))
+        owned_projects = cursor.fetchall()
+
+        # 🧨 2. Delete each owned project (cascades to tasks, assignments, etc.)
+        for row in owned_projects:
+            project_id = row[0]
+            cursor.execute("DELETE FROM Projects WHERE UniqueID = %s", (project_id,))
+        
+        # ✅ 3. Now delete the user
+        cursor.execute("DELETE FROM Users WHERE UniqueID = %s", (unique_id,))
+
+        conn.commit()
+        return jsonify({"message": "User e projetos associados (se houver) removidos com sucesso!"}), 200
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"message": f"Erro ao remover usuário: {str(e)}"}), 500
+    finally:
+        cursor.close()
 
     
 
