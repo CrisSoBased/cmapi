@@ -795,29 +795,37 @@ def get_owner_project_stats(current_user_id):
         cursor.close()
 
 
-@app.route("/userprojectrole", methods=["GET"])
+@app.route('/userprojectrole', methods=['GET'])
 @token_required
 def get_user_project_role(current_user_id):
-    cursor = conn.cursor()
+    try:
+        cursor = conn.cursor()
 
-    # If user is admin
-    cursor.execute("SELECT tipo FROM Users WHERE id = %s", (current_user_id,))
-    tipo = cursor.fetchone()[0]
-    if tipo == 2:
-        return jsonify({"role": "admin"})
+        # Check if user is admin
+        cursor.execute("SELECT tipo FROM Users WHERE id = %s", (current_user_id,))
+        tipo = cursor.fetchone()
+        if tipo and tipo[0] == 2:
+            return jsonify({"role": "admin"}), 200
 
-    # Check if user is OWNER of any projects
-    cursor.execute("SELECT COUNT(*) FROM UserProjects WHERE user_id = %s AND role = 'owner'", (current_user_id,))
-    if cursor.fetchone()[0] > 0:
-        return jsonify({"role": "owner"})
+        # Check role in UserProjects
+        cursor.execute("""
+            SELECT role 
+            FROM UserProjects 
+            WHERE user_id = %s 
+            LIMIT 1
+        """, (current_user_id,))
+        result = cursor.fetchone()
 
-    # Check if user is COLLABORATOR
-    cursor.execute("SELECT COUNT(*) FROM UserProjects WHERE user_id = %s AND role = 'collaborator'", (current_user_id,))
-    if cursor.fetchone()[0] > 0:
-        return jsonify({"role": "collaborator"})
+        if result:
+            return jsonify({"role": result[0]}), 200
+        else:
+            # If not in UserProjects, default to 'owner' (e.g., created project but not invited)
+            return jsonify({"role": "owner"}), 200
 
-    # If nothing found
-    return jsonify({"role": "none"})
+    except Exception as e:
+        print("Error in /userprojectrole:", e)
+        return jsonify({"error": "Internal server error"}), 500
+
 
 
 
