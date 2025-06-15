@@ -500,6 +500,13 @@ def stats_overview(current_user_id):
         return jsonify({"error": str(e)}), 500
     
 
+
+
+
+
+
+    
+
 @app.route('/adminallprojects', methods=['GET'])
 @token_required
 def admin_get_all_projects(current_user_id):
@@ -533,6 +540,50 @@ def admin_get_all_projects(current_user_id):
         return jsonify({"error": f"Internal error: {str(e)}"}), 500
     finally:
         cursor.close()
+
+
+
+@app.route('/admin_getproject', methods=['GET'])
+@token_required
+def admin_get_project(current_user_id):
+    project_id = request.args.get('project_id')
+    if not project_id:
+        return jsonify({"message": "Parâmetro 'project_id' é obrigatório"}), 400
+
+    cursor = conn.cursor()
+
+    # ✅ Ensure the user is an admin
+    cursor.execute("SELECT tipo FROM Users WHERE UniqueID = %s", (current_user_id,))
+    result = cursor.fetchone()
+    if not result or str(result[0]) != "2":
+        cursor.close()
+        return jsonify({"message": "Unauthorized"}), 403
+
+    # ✅ Retrieve project details directly
+    cursor.execute("""
+        SELECT UniqueID, nome, descricao, data_ini
+        FROM Projects
+        WHERE UniqueID = %s
+    """, (project_id,))
+    row = cursor.fetchone()
+    cursor.close()
+
+    if not row:
+        return jsonify({"message": "Projeto não encontrado"}), 404
+
+    return jsonify({
+        "id": row[0],
+        "name": row[1],
+        "description": row[2],
+        "start_date": row[3].isoformat() if row[3] else None
+    }), 200
+
+
+
+
+
+
+
 
 
 
