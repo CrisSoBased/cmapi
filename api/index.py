@@ -377,22 +377,38 @@ def get_owned_projects(current_user_id):
 @app.route('/removeuserfromtask', methods=['POST'])
 @token_required
 def remove_user_from_task(current_user_id):
-    data = request.json
-    id_task = data.get('id_task')
-    id_utilizador = data.get('id_utilizador')
+    data = request.get_json()
+    email = data.get('email')
+    task_id = data.get('task_id')
 
-    if not id_task or not id_utilizador:
-        return jsonify({"message": "id_task e id_utilizador são obrigatórios"}), 400
+    if not email or not task_id:
+        return jsonify({"message": "email e task_id são obrigatórios"}), 400
+
+    cursor = conn.cursor()
 
     try:
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM TaskAssignments WHERE user_id = %s AND task_id = %s", (id_utilizador, id_task))
+        # Get user ID from email
+        cursor.execute("SELECT UniqueID FROM Users WHERE email = %s", (email,))
+        user = cursor.fetchone()
+
+        if not user:
+            return jsonify({"message": "Usuário não encontrado"}), 404
+
+        user_id = user[0]
+
+        # Remove user from task
+        cursor.execute("DELETE FROM TaskAssignments WHERE user_id = %s AND task_id = %s", (user_id, task_id))
         conn.commit()
-        cursor.close()
-        return jsonify({"message": "Utilizador removido da tarefa com sucesso!"}), 200
+
+        return jsonify({"message": "Usuário removido da tarefa com sucesso!"}), 200
+
     except Exception as e:
         conn.rollback()
-        return jsonify({"message": "Erro ao remover utilizador da tarefa: " + str(e)}), 500
+        return jsonify({"message": f"Erro: {str(e)}"}), 500
+
+    finally:
+        cursor.close()
+
 
 
 @app.route('/removeuserfromproject', methods=['POST'])
