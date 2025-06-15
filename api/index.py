@@ -444,18 +444,30 @@ def remove_user_from_project(current_user_id):
     return jsonify({"message": "Usuário removido do projeto com sucesso"}), 200
 
 
-@app.route('/upgrade_user_table', methods=['POST'])
+@app.route('/add_admin_userproject', methods=['POST'])
 @token_required
-def upgrade_user_table(current_user_id):
+def add_admin_userproject(current_user_id):
     try:
+        data = request.json
+        user_id = data.get('user_id')
+        project_id = data.get('project_id')
+
+        if not user_id or not project_id:
+            return jsonify({"error": "Missing user_id or project_id"}), 400
+
         cursor = conn.cursor()
-        cursor.execute("ALTER TABLE Users ADD COLUMN role ENUM('user', 'admin') DEFAULT 'user'")
+        cursor.execute("""
+            INSERT INTO UserProjects (user_id, project_id, role)
+            VALUES (%s, %s, %s)
+        """, (user_id, project_id, "admin"))
         conn.commit()
         cursor.close()
-        return jsonify({"message": "User table upgraded successfully!"}), 200
+
+        return jsonify({"message": "Admin role inserted into UserProjects."}), 200
+
     except Exception as e:
         conn.rollback()
-        return jsonify({"error": f"Failed to upgrade Users table: {str(e)}"}), 500
+        return jsonify({"error": str(e)}), 500
 
 
 
