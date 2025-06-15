@@ -500,38 +500,40 @@ def stats_overview(current_user_id):
         return jsonify({"error": str(e)}), 500
     
 
-@app.route('/adminallprojects', methods=['GET']) 
+@app.route('/adminallprojects', methods=['GET'])
 @token_required
 def admin_get_all_projects(current_user_id):
     cursor = conn.cursor()
     
-    # ✅ Check if user is an admin by tipo
+    # Check if user is admin (tipo = 2)
     cursor.execute("SELECT tipo FROM Users WHERE UniqueID = %s", (current_user_id,))
     row = cursor.fetchone()
     if not row or row[0] != 2:
         cursor.close()
         return jsonify({"message": "Unauthorized"}), 403
 
-    # ✅ Fetch all projects
-    cursor.execute("""
-        SELECT UniqueID, nome, descricao, data_inicio
-        FROM Projects
-        ORDER BY data_inicio DESC
-    """)
-    projects = cursor.fetchall()
-    cursor.close()
+    try:
+        cursor.execute("""
+            SELECT UniqueID, nome, descricao, data_ini
+            FROM Projects
+            ORDER BY data_ini DESC
+        """)
+        projects = cursor.fetchall()
 
-    # ✅ Format response
-    result = []
-    for p in projects:
-        result.append({
+        result = [{
             "project_id": p[0],
             "name": p[1],
             "description": p[2],
             "start_date": p[3].strftime("%Y-%m-%d") if p[3] else None
-        })
+        } for p in projects]
 
-    return jsonify(result), 200
+        return jsonify(result), 200
+
+    except Exception as e:
+        return jsonify({"error": f"Internal error: {str(e)}"}), 500
+    finally:
+        cursor.close()
+
 
 
 
