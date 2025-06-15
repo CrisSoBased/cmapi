@@ -382,26 +382,37 @@ def get_owned_projects(current_user_id):
 
 @app.route('/removeproject', methods=['POST'])
 @token_required
-def removeproject():
-    # Recebe o JSON com o ID único do projeto
+def removeproject(current_user_id):
     project_data = request.json
     unique_id = project_data.get('UniqueID')
 
-    # Remove o projeto da tabela Projects
+    if not unique_id:
+        return jsonify({"message": "Missing project ID"}), 400
+
     cursor = conn.cursor()
     try:
+        # Check if user is the project owner
+        cursor.execute("""
+            SELECT 1 FROM UserProjects
+            WHERE user_id = %s AND project_id = %s AND role = 'owner'
+        """, (current_user_id, unique_id))
+        if not cursor.fetchone():
+            return jsonify({"message": "Only the project owner can delete the project"}), 403
+
+        # Proceed with deletion
         cursor.execute("DELETE FROM Projects WHERE UniqueID = %s", (unique_id,))
         conn.commit()
+
         if cursor.rowcount > 0:
-            cursor.close()
             return jsonify({"message": "Projeto removido com sucesso!"}), 200
         else:
-            cursor.close()
             return jsonify({"message": "Nenhum projeto encontrado com o ID fornecido"}), 404
     except Exception as e:
         conn.rollback()
-        cursor.close()
         return jsonify({"message": "Erro ao remover projeto: " + str(e)}), 500
+    finally:
+        cursor.close()
+
 
 
 @app.route('/editarproject', methods=['POST'])
