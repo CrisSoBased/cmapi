@@ -398,22 +398,51 @@ def remove_user_from_task(current_user_id):
 @app.route('/removeuserfromproject', methods=['POST'])
 @token_required
 def remove_user_from_project(current_user_id):
-    data = request.json
-    project_id = data.get('project_id')
-    id_utilizador = data.get('id_utilizador')
+    data = request.get_json()
 
-    if not project_id or not id_utilizador:
-        return jsonify({"message": "project_id e id_utilizador são obrigatórios"}), 400
+    email = data.get("email")
+    project_id = data.get("project_id")
 
-    try:
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM UserProjects WHERE user_id = %s AND project_id = %s", (id_utilizador, project_id))
-        conn.commit()
+    if not email or not project_id:
+        return jsonify({"message": "project_id e email são obrigatórios"}), 400
+
+    cursor = conn.cursor()
+
+    # 🔍 Step 1: Get user ID by email
+    cursor.execute("SELECT UniqueID FROM Users WHERE email = %s", (email,))
+    user = cursor.fetchone()
+
+    if not user:
         cursor.close()
-        return jsonify({"message": "Utilizador removido do projeto com sucesso!"}), 200
-    except Exception as e:
-        conn.rollback()
-        return jsonify({"message": "Erro ao remover utilizador do projeto: " + str(e)}), 500
+        return jsonify({"message": "Usuário não encontrado"}), 404
+
+    user_id = user[0]
+
+    # ❌ Step 2: Prevent removing the project owner
+    cursor.execute(
+        "SELECT role FROM UserProjects WHERE user_id = %s AND project_id = %s",
+        (user_id, project_id)
+    )
+    role_row = cursor.fetchone()
+
+    if not role_row:
+        cursor.close()
+        return jsonify({"message": "Usuário não está associado ao projeto"}), 404
+
+    if role_row[0] == "owner":
+        cursor.close()
+        return jsonify({"message": "Não é possível remover o proprietário do projeto"}), 403
+
+    # ✅ Step 3: Delete user from UserProjects
+    cursor.execute(
+        "DELETE FROM UserProjects WHERE user_id = %s AND project_id = %s",
+        (user_id, project_id)
+    )
+    conn.commit()
+    cursor.close()
+
+    return jsonify({"message": "Usuário removido do projeto com sucesso"}), 200
+
 
 
 
