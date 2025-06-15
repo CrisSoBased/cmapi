@@ -617,6 +617,38 @@ def list_users(current_user_id):
         cursor.close()
 
 
+@app.route('/deleteuser', methods=['POST'])
+@token_required
+def delete_user(current_user_id):
+    data = request.get_json()
+    email = data.get('email')
+
+    if not email:
+        return jsonify({"message": "Parâmetro 'email' é obrigatório"}), 400
+
+    cursor = conn.cursor()
+    try:
+        # Admin check
+        cursor.execute("SELECT tipo FROM Users WHERE UniqueID = %s", (current_user_id,))
+        tipo = cursor.fetchone()
+        if not tipo or str(tipo[0]) != "2":
+            return jsonify({"message": "Unauthorized"}), 403
+
+        cursor.execute("DELETE FROM Users WHERE email = %s", (email,))
+        conn.commit()
+
+        if cursor.rowcount == 0:
+            return jsonify({"message": "Usuário não encontrado"}), 404
+
+        return jsonify({"message": "Usuário deletado com sucesso"}), 200
+
+    except Exception as e:
+        return jsonify({"message": "Erro ao deletar usuário: " + str(e)}), 500
+    finally:
+        cursor.close()
+
+
+
 
 @app.route('/admin_editarproject', methods=['POST'])
 @token_required
