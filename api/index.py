@@ -6,7 +6,6 @@ import random
 import string
 import jwt
 import traceback
-from cristovao_bd import User
 
 
 
