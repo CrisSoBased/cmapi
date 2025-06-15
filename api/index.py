@@ -420,49 +420,52 @@ def remove_user_from_task(current_user_id):
 @token_required
 def remove_user_from_project(current_user_id):
     data = request.get_json()
-
-    email = data.get("email")
-    project_id = data.get("project_id")
+    email = data.get('email')
+    project_id = data.get('project_id')
 
     if not email or not project_id:
-        return jsonify({"message": "project_id e email são obrigatórios"}), 400
+        return jsonify({"message": "Email e project_id são obrigatórios"}), 400
 
     cursor = conn.cursor()
+    try:
+        # Check if user is admin
+        cursor.execute("SELECT tipo FROM Users WHERE UniqueID = %s", (current_user_id,))
+        tipo_result = cursor.fetchone()
+        is_admin = tipo_result and str(tipo_result[0]) == "2"
 
-    # 🔍 Step 1: Get user ID by email
-    cursor.execute("SELECT UniqueID FROM Users WHERE email = %s", (email,))
-    user = cursor.fetchone()
+        # Get target user ID
+        cursor.execute("SELECT UniqueID FROM Users WHERE email = %s", (email,))
+        user_row = cursor.fetchone()
+        if not user_row:
+            return jsonify({"message": "Usuário não encontrado"}), 404
+        user_id = user_row[0]
 
-    if not user:
+        # Check if user is linked to the project
+        cursor.execute("SELECT * FROM UserProjects WHERE user_id = %s AND project_id = %s", (user_id, project_id))
+        if not cursor.fetchone():
+            return jsonify({"message": "Usuário não está associado ao projeto"}), 404
+
+        # Remove only if not owner
+        cursor.execute("""
+            SELECT role FROM UserProjects WHERE user_id = %s AND project_id = %s
+        """, (user_id, project_id))
+        role_result = cursor.fetchone()
+        if role_result and role_result[0] == "owner":
+            return jsonify({"message": "Não é possível remover o proprietário"}), 403
+
+        # If admin or linked, proceed with deletion
+        if is_admin or current_user_id == user_id:
+            cursor.execute("DELETE FROM UserProjects WHERE user_id = %s AND project_id = %s", (user_id, project_id))
+            conn.commit()
+            return jsonify({"message": "Usuário removido com sucesso"}), 200
+        else:
+            return jsonify({"message": "Sem permissão para remover"}), 403
+
+    except Exception as e:
+        return jsonify({"message": "Erro: " + str(e)}), 500
+    finally:
         cursor.close()
-        return jsonify({"message": "Usuário não encontrado"}), 404
 
-    user_id = user[0]
-
-    # ❌ Step 2: Prevent removing the project owner
-    cursor.execute(
-        "SELECT role FROM UserProjects WHERE user_id = %s AND project_id = %s",
-        (user_id, project_id)
-    )
-    role_row = cursor.fetchone()
-
-    if not role_row:
-        cursor.close()
-        return jsonify({"message": "Usuário não está associado ao projeto"}), 404
-
-    if role_row[0] == "owner":
-        cursor.close()
-        return jsonify({"message": "Não é possível remover o proprietário do projeto"}), 403
-
-    # ✅ Step 3: Delete user from UserProjects
-    cursor.execute(
-        "DELETE FROM UserProjects WHERE user_id = %s AND project_id = %s",
-        (user_id, project_id)
-    )
-    conn.commit()
-    cursor.close()
-
-    return jsonify({"message": "Usuário removido do projeto com sucesso"}), 200
 
 
 @app.route('/stats/overview', methods=['GET'])
