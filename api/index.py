@@ -528,7 +528,7 @@ def admin_get_all_projects(current_user_id):
         projects = cursor.fetchall()
 
         result = [{
-            "project_id": p[0],
+            "id": p[0],
             "name": p[1],
             "description": p[2],
             "start_date": p[3].strftime("%Y-%m-%d") if p[3] else None
