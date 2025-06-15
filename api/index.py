@@ -795,6 +795,32 @@ def get_owner_project_stats(current_user_id):
         cursor.close()
 
 
+@app.route("/userprojectrole", methods=["GET"])
+@token_required
+def get_user_project_role(current_user_id):
+    cursor = conn.cursor()
+
+    # If user is admin
+    cursor.execute("SELECT tipo FROM Users WHERE id = %s", (current_user_id,))
+    tipo = cursor.fetchone()[0]
+    if tipo == 2:
+        return jsonify({"role": "admin"})
+
+    # Check if user is OWNER of any projects
+    cursor.execute("SELECT COUNT(*) FROM UserProjects WHERE user_id = %s AND role = 'owner'", (current_user_id,))
+    if cursor.fetchone()[0] > 0:
+        return jsonify({"role": "owner"})
+
+    # Check if user is COLLABORATOR
+    cursor.execute("SELECT COUNT(*) FROM UserProjects WHERE user_id = %s AND role = 'collaborator'", (current_user_id,))
+    if cursor.fetchone()[0] > 0:
+        return jsonify({"role": "collaborator"})
+
+    # If nothing found
+    return jsonify({"role": "none"})
+
+
+
 
 @app.route('/adminstats', methods=['GET'])
 @token_required
