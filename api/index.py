@@ -827,6 +827,20 @@ def get_user_project_role(current_user_id):
         return jsonify({"error": "Internal server error"}), 500
 
 
+@app.route('/api/user/<int:user_id>', methods=['GET'])
+def get_user_profile(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    return jsonify({
+        'id': user.id,
+        'nome': user.nome,
+        'email': user.email,
+        'desc_perfil': user.desc_perfil,
+        'foto': user.foto  # URL or filename
+    })
+
 
 
 
