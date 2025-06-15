@@ -668,15 +668,25 @@ def removeproject(current_user_id):
 
     cursor = conn.cursor()
     try:
-        # Check if user is the project owner
-        cursor.execute("""
-            SELECT 1 FROM UserProjects
-            WHERE user_id = %s AND project_id = %s AND role = 'owner'
-        """, (current_user_id, unique_id))
-        if not cursor.fetchone():
-            return jsonify({"message": "Only the project owner can delete the project"}), 403
+        # 🔍 Check if user is admin
+        cursor.execute("SELECT tipo FROM Users WHERE UniqueID = %s", (current_user_id,))
+        user_info = cursor.fetchone()
 
-        # Proceed with deletion
+        if not user_info:
+            return jsonify({"message": "User not found"}), 404
+
+        tipo = user_info[0]
+
+        if tipo != 2:  # Not admin
+            # 🔐 Then check if user is owner
+            cursor.execute("""
+                SELECT 1 FROM UserProjects
+                WHERE user_id = %s AND project_id = %s AND role = 'owner'
+            """, (current_user_id, unique_id))
+            if not cursor.fetchone():
+                return jsonify({"message": "Only the project owner or admin can delete the project"}), 403
+
+        # ✅ Proceed with deletion
         cursor.execute("DELETE FROM Projects WHERE UniqueID = %s", (unique_id,))
         conn.commit()
 
@@ -684,11 +694,14 @@ def removeproject(current_user_id):
             return jsonify({"message": "Projeto removido com sucesso!"}), 200
         else:
             return jsonify({"message": "Nenhum projeto encontrado com o ID fornecido"}), 404
+
     except Exception as e:
         conn.rollback()
         return jsonify({"message": "Erro ao remover projeto: " + str(e)}), 500
+
     finally:
         cursor.close()
+
 
 
 
