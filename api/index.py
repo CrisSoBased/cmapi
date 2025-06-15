@@ -444,6 +444,21 @@ def remove_user_from_project(current_user_id):
     return jsonify({"message": "Usuário removido do projeto com sucesso"}), 200
 
 
+@app.route('/upgrade_user_table', methods=['POST'])
+@token_required
+def upgrade_user_table(current_user_id):
+    try:
+        cursor = conn.cursor()
+        cursor.execute("ALTER TABLE Users ADD COLUMN role ENUM('user', 'admin') DEFAULT 'user'")
+        conn.commit()
+        cursor.close()
+        return jsonify({"message": "User table upgraded successfully!"}), 200
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": f"Failed to upgrade Users table: {str(e)}"}), 500
+
+
+
 
 
 
